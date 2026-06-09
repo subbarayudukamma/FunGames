@@ -1,0 +1,24 @@
+{
+  "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
+  "configurations": {
+    "app": {
+      "appLocation": "frontend",
+      "outputLocation": "dist",
+      "apiLocation": "api",
+      "appDevserverUrl": "http://localhost:5173",
+      "appName": "sk-icebreaker-bingo",
+      "resourceGroup": "maps-skamma"
+    },
+    "cruise2026": {
+      "appLocation": "frontend",
+      "apiLocation": "api",
+      "outputLocation": "dist",
+      "apiLanguage": "node",
+      "apiVersion": "22",
+      "appBuildCommand": "npm run build",
+      "apiBuildCommand": "npm run build --if-present",
+      "run": "npm run dev",
+      "appDevserverUrl": "http://localhost:5173"
+    }
+  }
+}
