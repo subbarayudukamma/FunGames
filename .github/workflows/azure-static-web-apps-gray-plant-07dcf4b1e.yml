@@ -29,8 +29,9 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "./IceBreakerBingo/frontend"
-          api_location: ""
+          api_location: "./IceBreakerBingo/api"
           output_location: "dist"
+          api_build_command: "npm install --production"
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
