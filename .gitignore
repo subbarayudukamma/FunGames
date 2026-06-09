@@ -1,0 +1,4 @@
+node_modules/
+IceBreakerBingo/api/local.settings.json
+IceBreakerBingo/frontend/dist/
+.env
