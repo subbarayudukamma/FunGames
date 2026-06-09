@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.PROD
+  ? 'https://sk-icebreaker-bingo-api.azurewebsites.net/api'
+  : '/api';
 
 export async function joinGame(alias, displayName, teamName) {
   const res = await fetch(`${API_BASE}/join`, {
