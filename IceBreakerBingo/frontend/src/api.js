@@ -19,6 +19,11 @@ function withPlayroom(url) {
   return `${url}${separator}playroom=${encodeURIComponent(playroom)}`;
 }
 
+export function hasPlayroom() {
+  const params = new URLSearchParams(window.location.search);
+  return !!(params.get('playroom') || localStorage.getItem('bingo_playroom'));
+}
+
 export async function joinGame(alias, displayName, teamName) {
   const res = await fetch(withPlayroom(`${API_BASE}/join`), {
     method: 'POST',
