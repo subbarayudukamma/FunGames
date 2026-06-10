@@ -304,7 +304,7 @@ app.http("adminUnclaimWin", {
 });
 
 // GET /api/game-admin/win-queue
-// Admin gets the pending win notification queue
+// Admin gets the pending win notification queue with player answers for each winning line
 app.http("adminWinQueue", {
   methods: ["GET"],
   authLevel: "anonymous",
@@ -316,13 +316,43 @@ app.http("adminWinQueue", {
     }
 
     try {
-      const { gameContainer } = await ensureInitialized();
+      const { gameContainer, playersContainer } = await ensureInitialized();
       const { resource: config } = await gameContainer.item("config", "game").read();
+      const questions = config.questions || [];
+
+      const winQueue = config.winQueue || [];
+
+      // For each queue item, fetch player card and extract answers for the winning line
+      const enrichedQueue = [];
+      const playerCache = {};
+
+      for (const item of winQueue) {
+        if (!playerCache[item.player]) {
+          const { resource: player } = await playersContainer.item(item.player, "player").read();
+          playerCache[item.player] = player;
+        }
+        const player = playerCache[item.player];
+        const card = player?.card || [];
+
+        // Determine which positions make up this winning line
+        const positions = getPositionsForCategory(item.category);
+        const answers = positions.map(pos => {
+          const cell = card.find(c => c.position === pos);
+          const question = questions.find(q => q.id === cell?.questionId);
+          return {
+            position: pos,
+            question: question?.text || cell?.questionText || '(unknown)',
+            answer: cell?.answer || null,
+          };
+        });
+
+        enrichedQueue.push({ ...item, answers });
+      }
 
       return {
         status: 200,
         jsonBody: {
-          winQueue: config.winQueue || [],
+          winQueue: enrichedQueue,
           claimedWins: config.claimedWins || {},
         },
       };
@@ -332,6 +362,20 @@ app.http("adminWinQueue", {
     }
   },
 });
+
+// Helper: get cell positions for a win category
+function getPositionsForCategory(category) {
+  const ROWS = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24]];
+  const COLS = [[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24]];
+  const DIAGS = [[0,6,12,18,24],[4,8,12,16,20]];
+
+  if (category === 'first5') return Array.from({length: 25}, (_, i) => i); // all cells (admin sees all)
+  if (category === 'blackout') return Array.from({length: 25}, (_, i) => i);
+  if (category.startsWith('row-')) return ROWS[parseInt(category.split('-')[1])] || [];
+  if (category.startsWith('col-')) return COLS[parseInt(category.split('-')[1])] || [];
+  if (category.startsWith('diag-')) return DIAGS[parseInt(category.split('-')[1])] || [];
+  return [];
+}
 
 // POST /api/game-admin/dismiss-queue-item
 // Admin dismisses a queue item (reject without claiming)

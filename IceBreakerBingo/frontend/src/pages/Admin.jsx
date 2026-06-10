@@ -193,43 +193,60 @@ export default function Admin() {
           {winQueue.length === 0 ? (
             <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No pending verifications.</p>
           ) : (
-            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {winQueue.map((item, idx) => (
                 <div key={`${item.category}-${item.player}-${idx}`} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '0.5rem', border: '1px solid var(--border)', borderRadius: '8px',
+                  padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '8px',
                   marginBottom: '0.5rem', background: '#fffbeb',
                 }}>
-                  <div>
-                    <span style={{ fontWeight: 600 }}>{formatCategory(item.category)}</span>
-                    <span style={{ marginLeft: '0.5rem', color: 'var(--text-muted)' }}>
-                      — {item.displayName} ({item.player})
-                    </span>
-                    <br />
-                    <small style={{ color: 'var(--text-muted)' }}>
-                      {new Date(item.completedAt).toLocaleTimeString()}
-                    </small>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <span style={{ fontWeight: 600 }}>{formatCategory(item.category)}</span>
+                      <span style={{ marginLeft: '0.5rem', color: 'var(--text-muted)' }}>
+                        — {item.displayName} ({item.player})
+                      </span>
+                      <br />
+                      <small style={{ color: 'var(--text-muted)' }}>
+                        {new Date(item.completedAt).toLocaleTimeString()}
+                      </small>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button
+                        className="btn btn-success"
+                        style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                        onClick={() => handleClaimWin(item.category, item.player)}
+                        disabled={loading || claimedWins[item.category]}
+                        title="Verify & Claim"
+                      >
+                        ✓ Claim
+                      </button>
+                      <button
+                        className="btn"
+                        style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'var(--border)' }}
+                        onClick={() => handleDismiss(item.category, item.player)}
+                        disabled={loading}
+                        title="Dismiss"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.25rem' }}>
-                    <button
-                      className="btn btn-success"
-                      style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                      onClick={() => handleClaimWin(item.category, item.player)}
-                      disabled={loading || claimedWins[item.category]}
-                      title="Verify & Claim"
-                    >
-                      ✓ Claim
-                    </button>
-                    <button
-                      className="btn"
-                      style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'var(--border)' }}
-                      onClick={() => handleDismiss(item.category, item.player)}
-                      disabled={loading}
-                      title="Dismiss"
-                    >
-                      ✕
-                    </button>
-                  </div>
+                  {/* Player's answers for this winning line */}
+                  {item.answers && item.answers.length > 0 && (
+                    <details style={{ marginTop: '0.5rem' }}>
+                      <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 500 }}>
+                        View answers ({item.answers.filter(a => a.answer).length} cells)
+                      </summary>
+                      <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', background: '#fff', padding: '0.5rem', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                        {item.answers.filter(a => a.answer).map((a, i) => (
+                          <div key={i} style={{ marginBottom: '0.3rem', paddingBottom: '0.3rem', borderBottom: i < item.answers.filter(x => x.answer).length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>Q: </span>{a.question}<br/>
+                            <span style={{ color: 'var(--text-muted)' }}>A: </span><strong>{a.answer}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
               ))}
             </div>

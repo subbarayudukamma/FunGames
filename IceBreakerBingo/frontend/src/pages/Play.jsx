@@ -223,6 +223,8 @@ export default function Play() {
                   setSelectedCell(cell);
                   setAnswer('');
                   setError('');
+                } else if (isCompleted && !isFree) {
+                  setSelectedCell({ ...cell, viewOnly: true });
                 }
               }}
             >
@@ -237,42 +239,59 @@ export default function Play() {
       {selectedCell && (
         <div className="modal-overlay" onClick={() => setSelectedCell(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>📝 Answer This Question</h3>
-            <p style={{ fontSize: '1rem', color: 'var(--text)' }}>{selectedCell.questionText}</p>
-            <div style={{ position: 'relative' }}>
-              <input
-                className="input"
-                type="text"
-                placeholder="Start typing a name..."
-                value={answer}
-                onChange={(e) => handleAnswerChange(e.target.value)}
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmitAnswer()}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                onFocus={() => answer.trim() && suggestions.length > 0 && setShowSuggestions(true)}
-              />
-              {showSuggestions && (
-                <ul className="autocomplete-list">
-                  {suggestions.map((s, i) => (
-                    <li key={i} onMouseDown={() => selectSuggestion(s.displayName)}>
-                      <strong>{s.displayName}</strong>
-                      {s.teamName && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>({s.teamName})</span>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            {error && (
-              <p style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{error}</p>
+            {selectedCell.viewOnly ? (
+              <>
+                <h3>✅ Your Answer</h3>
+                <p style={{ fontSize: '1rem', color: 'var(--text)' }}>{selectedCell.questionText}</p>
+                <p style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  {selectedCell.answer}
+                </p>
+                <div className="modal-actions">
+                  <button className="btn" style={{ background: 'var(--border)' }} onClick={() => setSelectedCell(null)}>
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>📝 Answer This Question</h3>
+                <p style={{ fontSize: '1rem', color: 'var(--text)' }}>{selectedCell.questionText}</p>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Start typing a name..."
+                    value={answer}
+                    onChange={(e) => handleAnswerChange(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitAnswer()}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    onFocus={() => answer.trim() && suggestions.length > 0 && setShowSuggestions(true)}
+                  />
+                  {showSuggestions && (
+                    <ul className="autocomplete-list">
+                      {suggestions.map((s, i) => (
+                        <li key={i} onMouseDown={() => selectSuggestion(s.displayName)}>
+                          <strong>{s.displayName}</strong>
+                          {s.teamName && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>({s.teamName})</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {error && (
+                  <p style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{error}</p>
+                )}
+                <div className="modal-actions">
+                  <button className="btn btn-primary" onClick={handleSubmitAnswer} disabled={submitting || !answer.trim()}>
+                    {submitting ? 'Submitting...' : '✅ Submit'}
+                  </button>
+                  <button className="btn" style={{ background: 'var(--border)' }} onClick={() => setSelectedCell(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </>
             )}
-            <div className="modal-actions">
-              <button className="btn btn-primary" onClick={handleSubmitAnswer} disabled={submitting || !answer.trim()}>
-                {submitting ? 'Submitting...' : '✅ Submit'}
-              </button>
-              <button className="btn" style={{ background: 'var(--border)' }} onClick={() => setSelectedCell(null)}>
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}
