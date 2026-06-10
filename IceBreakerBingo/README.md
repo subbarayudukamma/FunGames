@@ -5,9 +5,9 @@ A mobile-first web app for team icebreaker bingo at events. Players scan a QR co
 ## Tech Stack
 
 - **Frontend**: React (Vite) - Mobile-first SPA
-- **Backend**: Azure Functions (Node.js v4 programming model)
+- **Backend**: Azure Functions (Node.js v4 programming model, standalone Function App)
 - **Database**: Azure Cosmos DB (Serverless tier)
-- **Hosting**: Azure Static Web Apps
+- **Hosting**: Azure Static Web Apps (frontend) + Azure Function App (API)
 
 ## Project Structure
 
@@ -88,31 +88,91 @@ Cruise2026/
 
 ## Deployment to Azure
 
-1. Create a resource group:
+This app uses a **split deployment architecture**:
+- **Frontend** → Azure Static Web Apps (auto-deployed via GitHub Actions on push to `main`)
+- **API** → Standalone Azure Function App (deployed manually via Azure Functions Core Tools)
+
+> **Why split?** Azure SWA Free tier's managed functions do NOT support Azure Functions v4 Node.js programming model. The API must be deployed as a standalone Function App.
+
+### Prerequisites
+
+- Azure CLI (`az`) logged in
+- Azure Functions Core Tools v4 (`func`)
+- GitHub repo connected to SWA for CI/CD
+
+### Initial Setup
+
+1. **Create resources** (if not already done):
    ```bash
-   az group create -n rg-icebreaker-bingo -l westus2
+   az group create -n maps-skamma -l westus2
+   az cosmosdb create -n sk-icebreaker-bingo -g maps-skamma --capabilities EnableServerless
+   az cosmosdb sql database create -a sk-icebreaker-bingo -g maps-skamma -n icebreaker-bingo
+   az functionapp create -n sk-icebreaker-bingo-api -g maps-skamma --consumption-plan-location westus2 \
+     --runtime node --runtime-version 22 --functions-version 4 --os-type Linux \
+     --storage-account skicebreakersa
+   az staticwebapp create -n sk-icebreaker-bingo-v2 -g maps-skamma
    ```
 
-2. Create Cosmos DB (serverless):
+2. **Configure Function App settings**:
    ```bash
-   az cosmosdb create -n cosmos-icebreaker -g rg-icebreaker-bingo --capabilities EnableServerless
-   az cosmosdb sql database create -a cosmos-icebreaker -g rg-icebreaker-bingo -n icebreaker-bingo
-   az cosmosdb sql container create -a cosmos-icebreaker -g rg-icebreaker-bingo -d icebreaker-bingo -n game -p /partitionKey
-   az cosmosdb sql container create -a cosmos-icebreaker -g rg-icebreaker-bingo -d icebreaker-bingo -n players -p /partitionKey
+   az functionapp config appsettings set --name sk-icebreaker-bingo-api --resource-group maps-skamma --settings \
+     "COSMOS_ENDPOINT=https://sk-icebreaker-bingo.documents.azure.com:443/" \
+     "COSMOS_KEY=<your-cosmos-key>" \
+     "COSMOS_DATABASE=icebreaker-bingo" \
+     "ADMIN_KEY=<your-admin-key>" \
+     "PLAYROOM_KEY=<your-playroom-key>"
    ```
 
-3. Deploy Static Web App:
-   ```bash
-   az staticwebapp create -n sk-icebreaker-bingo -g maps-skamma
-   npx swa login --resource-group maps-skamma --app-name sk-icebreaker-bingo
-   npx swa deploy --app-location frontend --output-location dist --api-location api
+3. **Configure CORS on Function App** (Azure Portal or CLI):
+   - Allow origins: your SWA URL (e.g. `https://gray-plant-07dcf4b1e.7.azurestaticapps.net`), `http://localhost:5173`
 
-npx swa deploy  --app-location frontend --output-location dist --api-location api --resource-group maps-skamma --app-name sk-icebreaker-bingo
-   ```
+### Deploying the API
 
-4. Set app settings in Azure portal with Cosmos connection string and ADMIN_KEY.
+```bash
+cd IceBreakerBingo/api
+func azure functionapp publish sk-icebreaker-bingo-api
+```
 
-5. Generate QR code pointing to your app URL and share!
+### Deploying the Frontend
+
+Frontend deploys automatically via GitHub Actions when you push to `main`. The workflow file is at `.github/workflows/azure-static-web-apps-gray-plant-07dcf4b1e.yml`.
+
+To trigger a manual deployment:
+1. Push a commit to `main`, OR
+2. Go to GitHub → Actions → select the workflow → "Run workflow"
+
+### GitHub Actions Workflow
+
+The workflow uses `Azure/static-web-apps-deploy@v1` with:
+- `app_location: "./IceBreakerBingo/frontend"`
+- `api_location: ""` (API deployed separately)
+- `output_location: "dist"`
+
+## Playroom Security
+
+To prevent unauthorized access and potential abuse of the public endpoints, the app uses a **playroom key** system:
+
+- All API endpoints require a `?playroom=VALUE` query parameter
+- The value must match the `PLAYROOM_KEY` environment variable set on the Function App
+- Requests without a valid playroom key receive a `403 Forbidden` response
+- The playroom key is NOT stored in source code — it's configured only in Azure
+
+### How it works
+
+1. The admin shares a URL like: `https://your-app.azurestaticapps.net/?playroom=YOUR_KEY`
+2. The frontend extracts the `playroom` param and stores it in localStorage
+3. All subsequent API calls automatically include the playroom parameter
+4. Admin URL format: `/admin?key=ADMIN_KEY&playroom=PLAYROOM_KEY`
+
+### Configuration
+
+Set the key in Azure Function App settings:
+```bash
+az functionapp config appsettings set --name sk-icebreaker-bingo-api \
+  --resource-group maps-skamma --settings "PLAYROOM_KEY=YourSecretValue"
+```
+
+For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, all requests pass through without validation.
 
 ## Game Flow
 
@@ -143,3 +203,4 @@ npx swa deploy  --app-location frontend --output-location dist --api-location ap
 - ✅ Game reset automatically returns all players to the landing page
 - ✅ Mobile-responsive design
 - ✅ No answer changes after submission
+- ✅ **Playroom key** — mandatory query parameter prevents unauthorized access / DDoS; key configured in Azure, not in source

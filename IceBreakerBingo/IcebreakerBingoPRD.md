@@ -149,6 +149,8 @@ A lightweight, mobile-first web app for team icebreaker bingo at events. Players
 
 ## 7. API Endpoints (Azure Functions)
 
+> **Note**: All endpoints require `?playroom=KEY` parameter. Admin endpoints additionally require `?key=ADMIN_KEY`.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/join` | Player joins (alias + name + team) → returns card if game active |
@@ -210,18 +212,43 @@ Computed on each answer submission and stored in player doc for fast dashboard q
 
 ## 10. Deployment
 
-1. Create Azure resource group
-2. Deploy Cosmos DB (serverless tier)
-3. Deploy Azure Functions (Node.js 18+)
-4. Deploy Static Web App (linked to Functions)
-5. Generate QR code pointing to app URL
-6. Share admin URL with admin key to event organizers
+### Architecture
+
+- **Frontend**: Azure Static Web Apps (auto-deployed from GitHub on push to `main`)
+- **API**: Standalone Azure Function App (Node.js 22, deployed via `func azure functionapp publish`)
+- **Database**: Azure Cosmos DB (serverless)
+
+> Azure SWA Free tier does NOT support Azure Functions v4 programming model, so the API is deployed separately.
+
+### Steps
+
+1. Create Azure resources (Cosmos DB, Function App, Static Web App)
+2. Configure Function App settings: `COSMOS_ENDPOINT`, `COSMOS_KEY`, `COSMOS_DATABASE`, `ADMIN_KEY`, `PLAYROOM_KEY`
+3. Deploy API: `cd api && func azure functionapp publish sk-icebreaker-bingo-api`
+4. Push to GitHub → frontend auto-deploys via GitHub Actions
+5. Configure CORS on Function App to allow SWA origin
+6. Generate QR code pointing to app URL with playroom key: `https://your-app.azurestaticapps.net/?playroom=KEY`
+7. Share admin URL: `https://your-app.azurestaticapps.net/admin?key=ADMIN_KEY&playroom=PLAYROOM_KEY`
 
 **Estimated build time**: 4–8 hours for a working MVP
 
 ---
 
-## 11. Open Questions
+## 11. Security: Playroom Key
+
+All API endpoints require a `playroom` query parameter to prevent unauthorized access and DDoS attacks on the public-facing app.
+
+- **How it works**: Every API call must include `?playroom=VALUE` matching the `PLAYROOM_KEY` env var on the Function App
+- **Frontend behavior**: Extracts `playroom` from the initial URL, stores in localStorage, attaches to all API calls automatically
+- **Rejection**: Requests without a valid playroom key receive `403 Forbidden`
+- **Local dev**: If `PLAYROOM_KEY` is not set, validation is skipped (all requests allowed)
+- **QR code**: The playroom value should be embedded in the QR code URL so players don't need to know it
+
+This effectively creates isolated "playrooms" — only users with the correct key can interact with the game.
+
+---
+
+## 12. Open Questions
 
 1. Should players be able to change their answer after submitting for a cell? Ans : No
 2. Is there a free center square (like traditional bingo)? Ans : Sure
