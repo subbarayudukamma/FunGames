@@ -366,15 +366,18 @@ export default function Admin() {
               <input
                 type="file"
                 accept=".txt"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files[0];
                   if (!file) return;
                   const reader = new FileReader();
-                  reader.onload = (ev) => {
+                  reader.onload = async (ev) => {
                     const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
                     const imported = lines.map((text, i) => ({ id: `imp${i + 1}`, text }));
                     setQuestions(imported);
-                    setMessage(`Imported ${imported.length} questions from file`);
+                    setLoading(true);
+                    const result = await adminSaveQuestions(adminKey, imported);
+                    setMessage(result.message || result.error || `Imported & saved ${imported.length} questions from file`);
+                    setLoading(false);
                   };
                   reader.readAsText(file);
                   e.target.value = '';
@@ -392,13 +395,16 @@ export default function Admin() {
             <button
               className="btn"
               style={{ width: 'auto', fontSize: '0.85rem', background: 'var(--primary)', color: 'white' }}
-              onClick={() => {
+              onClick={async () => {
                 const lines = importText.split('\n').map(l => l.trim()).filter(Boolean);
                 if (lines.length === 0) return;
                 const imported = lines.map((text, i) => ({ id: `imp${i + 1}`, text }));
                 setQuestions(imported);
                 setImportText('');
-                setMessage(`Imported ${imported.length} questions`);
+                setLoading(true);
+                const result = await adminSaveQuestions(adminKey, imported);
+                setMessage(result.message || result.error || `Imported & saved ${imported.length} questions`);
+                setLoading(false);
               }}
             >
               📋 Import from Paste
@@ -422,14 +428,30 @@ export default function Admin() {
             ))}
           </div>
 
-          <button
-            className="btn btn-primary"
-            style={{ marginTop: '1rem' }}
-            onClick={handleSaveQuestions}
-            disabled={loading}
-          >
-            💾 Save Questions
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveQuestions}
+              disabled={loading}
+            >
+              💾 Save Questions
+            </button>
+            <button
+              className="btn"
+              style={{ background: 'var(--danger)', color: 'white' }}
+              onClick={async () => {
+                if (!window.confirm('Clear ALL questions?')) return;
+                setQuestions([]);
+                setLoading(true);
+                const result = await adminSaveQuestions(adminKey, []);
+                setMessage(result.message || 'All questions cleared');
+                setLoading(false);
+              }}
+              disabled={loading}
+            >
+              🗑️ Clear All
+            </button>
+          </div>
         </div>
       )}
 

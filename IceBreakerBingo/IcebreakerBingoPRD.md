@@ -182,15 +182,17 @@ A lightweight, mobile-first web app for team icebreaker bingo at events. Players
 ### 8.2 `/play` — Bingo Card
 - 5×5 grid, mobile-responsive
 - Each cell shows question text (truncated, tap to expand)
-- Tap cell → modal with full question + autocomplete text input (suggests participant names/teams from roster; allows free-text entry) + Submit button
+- Tap unanswered cell → modal with full question + autocomplete text input (suggests participant names/teams from roster; allows free-text entry) + Submit button
+- Tap completed cell → modal showing the submitted answer (view-only)
 - Completed cells turn green with checkmark
 - Progress bar showing X/25 completed
 - Refresh button + auto-poll every 5s for game state
 
 ### 8.3 `/admin` — Admin Dashboard (protected by `?key=`)
 - **Lobby tab**: Player count, list of registered players (with team names)
-- **Questions tab**: Add/edit/delete questions (need 25 minimum). Import questions from .txt file or paste (one per line). Generate 30 random questions button.
+- **Questions tab**: Add/edit/delete questions (need 25 minimum). Import questions from .txt file or paste (one per line, auto-saves). Generate 30 random questions button. "Clear All" button to remove all questions at once.
 - **Game Control**: "Release Bingo" / "End Game" / "Reset" buttons
+- **Verification Queue**: Shows players who completed a line. Admin can expand "View answers" to see the player's question/answer pairs for that winning line before claiming.
 - **Leaderboard tab**:
   - Table: Player | Completed | Row? | Col? | Diagonal? | Blackout?
   - Filters: "Show first 5 done", "Show row completers", etc.

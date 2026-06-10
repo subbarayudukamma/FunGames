@@ -327,8 +327,9 @@ app.http("adminWinQueue", {
       const playerCache = {};
 
       for (const item of winQueue) {
+        const playerId = `player-${item.player}`;
         if (!playerCache[item.player]) {
-          const { resource: player } = await playersContainer.item(item.player, "player").read();
+          const { resource: player } = await playersContainer.item(playerId, "player").read();
           playerCache[item.player] = player;
         }
         const player = playerCache[item.player];

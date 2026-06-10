@@ -197,7 +197,9 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ Admin dashboard with leaderboard
 - ✅ **Team name** — players enter their team on join, visible in admin lobby
 - ✅ **Answer autocomplete** — suggests participant names from roster as you type (with team info), also allows free-text entry
-- ✅ **Question import** — import from .txt file or paste (one question per line)
+- ✅ **Question import** — import from .txt file or paste (one question per line, auto-saves immediately). "Clear All" button to remove all questions.
+- ✅ **Answer verification** — admin can expand win queue items to view the player's answers for the winning line before claiming
+- ✅ **View submitted answers** — players can tap completed cells to see what they entered
 - ✅ **Post-game export** — admin can export all player answers as structured JSON so participants can stay in touch with people they met
 - ✅ Generate 30 random placeholder questions with one click
 - ✅ Game reset automatically returns all players to the landing page
