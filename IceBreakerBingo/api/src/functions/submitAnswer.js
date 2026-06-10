@@ -1,12 +1,14 @@
 const { app } = require("@azure/functions");
 const { ensureInitialized } = require("./cosmosClient");
 const { checkWins } = require("./bingoLogic");
+const { validatePlayroom, playroomDenied } = require("./playroom");
 
 app.http("submitAnswer", {
   methods: ["POST"],
   authLevel: "anonymous",
   route: "submit-answer",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     try {
       const { alias, questionId, answer } = await request.json();
 

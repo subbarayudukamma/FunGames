@@ -2,8 +2,25 @@ const API_BASE = import.meta.env.PROD
   ? 'https://sk-icebreaker-bingo-api.azurewebsites.net/api'
   : '/api';
 
+// Get playroom from URL or localStorage
+function getPlayroom() {
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get('playroom');
+  if (fromUrl) {
+    localStorage.setItem('bingo_playroom', fromUrl);
+    return fromUrl;
+  }
+  return localStorage.getItem('bingo_playroom') || '';
+}
+
+function withPlayroom(url) {
+  const playroom = getPlayroom();
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}playroom=${encodeURIComponent(playroom)}`;
+}
+
 export async function joinGame(alias, displayName, teamName) {
-  const res = await fetch(`${API_BASE}/join`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/join`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ alias, displayName, teamName }),
@@ -12,22 +29,22 @@ export async function joinGame(alias, displayName, teamName) {
 }
 
 export async function getGameState() {
-  const res = await fetch(`${API_BASE}/game-state`);
+  const res = await fetch(withPlayroom(`${API_BASE}/game-state`));
   return res.json();
 }
 
 export async function getRoster() {
-  const res = await fetch(`${API_BASE}/roster`);
+  const res = await fetch(withPlayroom(`${API_BASE}/roster`));
   return res.json();
 }
 
 export async function getMyCard(alias) {
-  const res = await fetch(`${API_BASE}/my-card?alias=${encodeURIComponent(alias)}`);
+  const res = await fetch(withPlayroom(`${API_BASE}/my-card?alias=${encodeURIComponent(alias)}`));
   return res.json();
 }
 
 export async function submitAnswer(alias, questionId, answer) {
-  const res = await fetch(`${API_BASE}/submit-answer`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/submit-answer`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ alias, questionId, answer }),
@@ -36,36 +53,36 @@ export async function submitAnswer(alias, questionId, answer) {
 }
 
 export async function adminGetPlayers(key) {
-  const res = await fetch(`${API_BASE}/game-admin/players?key=${encodeURIComponent(key)}`);
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/players?key=${encodeURIComponent(key)}`));
   return res.json();
 }
 
 export async function adminGetDashboard(key) {
-  const res = await fetch(`${API_BASE}/game-admin/dashboard?key=${encodeURIComponent(key)}`);
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/dashboard?key=${encodeURIComponent(key)}`));
   return res.json();
 }
 
 export async function adminRelease(key) {
-  const res = await fetch(`${API_BASE}/game-admin/release?key=${encodeURIComponent(key)}`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/release?key=${encodeURIComponent(key)}`), {
     method: 'POST',
   });
   return res.json();
 }
 
 export async function adminReset(key) {
-  const res = await fetch(`${API_BASE}/game-admin/reset?key=${encodeURIComponent(key)}`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/reset?key=${encodeURIComponent(key)}`), {
     method: 'POST',
   });
   return res.json();
 }
 
 export async function adminGetQuestions(key) {
-  const res = await fetch(`${API_BASE}/game-admin/questions?key=${encodeURIComponent(key)}`);
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/questions?key=${encodeURIComponent(key)}`));
   return res.json();
 }
 
 export async function adminSaveQuestions(key, questions) {
-  const res = await fetch(`${API_BASE}/game-admin/questions?key=${encodeURIComponent(key)}`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/questions?key=${encodeURIComponent(key)}`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ questions }),
@@ -74,7 +91,7 @@ export async function adminSaveQuestions(key, questions) {
 }
 
 export async function adminClaimWin(key, category, winner) {
-  const res = await fetch(`${API_BASE}/game-admin/claim-win?key=${encodeURIComponent(key)}`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/claim-win?key=${encodeURIComponent(key)}`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ category, winner }),
@@ -83,7 +100,7 @@ export async function adminClaimWin(key, category, winner) {
 }
 
 export async function adminUnclaimWin(key, category) {
-  const res = await fetch(`${API_BASE}/game-admin/unclaim-win?key=${encodeURIComponent(key)}`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/unclaim-win?key=${encodeURIComponent(key)}`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ category }),
@@ -92,12 +109,12 @@ export async function adminUnclaimWin(key, category) {
 }
 
 export async function adminGetWinQueue(key) {
-  const res = await fetch(`${API_BASE}/game-admin/win-queue?key=${encodeURIComponent(key)}`);
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/win-queue?key=${encodeURIComponent(key)}`));
   return res.json();
 }
 
 export async function adminDismissQueueItem(key, category, player) {
-  const res = await fetch(`${API_BASE}/game-admin/dismiss-queue-item?key=${encodeURIComponent(key)}`, {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/dismiss-queue-item?key=${encodeURIComponent(key)}`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ category, player }),
@@ -106,6 +123,6 @@ export async function adminDismissQueueItem(key, category, player) {
 }
 
 export async function adminExport(key) {
-  const res = await fetch(`${API_BASE}/game-admin/export?key=${encodeURIComponent(key)}`);
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/export?key=${encodeURIComponent(key)}`));
   return res.json();
 }

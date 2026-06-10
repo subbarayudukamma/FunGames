@@ -1,11 +1,13 @@
 const { app } = require("@azure/functions");
 const { ensureInitialized } = require("./cosmosClient");
+const { validatePlayroom, playroomDenied } = require("./playroom");
 
 app.http("myCard", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "my-card",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     try {
       const alias = request.query.get("alias");
       if (!alias) {

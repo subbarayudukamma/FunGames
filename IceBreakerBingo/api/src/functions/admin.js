@@ -1,6 +1,7 @@
 const { app } = require("@azure/functions");
 const { ensureInitialized } = require("./cosmosClient");
 const { generateCard } = require("./bingoLogic");
+const { validatePlayroom, playroomDenied } = require("./playroom");
 
 // Admin middleware helper
 function validateAdmin(request) {
@@ -15,6 +16,7 @@ app.http("adminPlayers", {
   authLevel: "anonymous",
   route: "game-admin/players",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -39,6 +41,7 @@ app.http("adminDashboard", {
   authLevel: "anonymous",
   route: "game-admin/dashboard",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -85,6 +88,7 @@ app.http("adminRelease", {
   authLevel: "anonymous",
   route: "game-admin/release",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -127,6 +131,7 @@ app.http("adminReset", {
   authLevel: "anonymous",
   route: "game-admin/reset",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -164,6 +169,7 @@ app.http("adminGetQuestions", {
   authLevel: "anonymous",
   route: "game-admin/questions",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -186,6 +192,7 @@ app.http("adminSaveQuestions", {
   authLevel: "anonymous",
   route: "game-admin/questions",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -222,6 +229,7 @@ app.http("adminClaimWin", {
   authLevel: "anonymous",
   route: "game-admin/claim-win",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -270,6 +278,7 @@ app.http("adminUnclaimWin", {
   authLevel: "anonymous",
   route: "game-admin/unclaim-win",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -301,6 +310,7 @@ app.http("adminWinQueue", {
   authLevel: "anonymous",
   route: "game-admin/win-queue",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -330,6 +340,7 @@ app.http("adminDismissQueueItem", {
   authLevel: "anonymous",
   route: "game-admin/dismiss-queue-item",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }
@@ -362,6 +373,7 @@ app.http("adminExport", {
   authLevel: "anonymous",
   route: "game-admin/export",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     if (!validateAdmin(request)) {
       return { status: 401, jsonBody: { error: "Invalid admin key" } };
     }

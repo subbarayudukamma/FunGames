@@ -1,11 +1,13 @@
 const { app } = require("@azure/functions");
 const { ensureInitialized } = require("./cosmosClient");
+const { validatePlayroom, playroomDenied } = require("./playroom");
 
 app.http("gameState", {
   methods: ["GET"],
   authLevel: "anonymous",
   route: "game-state",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     try {
       const { gameContainer, playersContainer } = await ensureInitialized();
       const { resource: config } = await gameContainer.item("config", "game").read();

@@ -1,5 +1,6 @@
 const { app } = require("@azure/functions");
 const { ensureInitialized } = require("./cosmosClient");
+const { validatePlayroom, playroomDenied } = require("./playroom");
 
 // GET /api/roster — returns all player names + teams for autocomplete
 app.http("roster", {
@@ -7,6 +8,7 @@ app.http("roster", {
   authLevel: "anonymous",
   route: "roster",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     try {
       const { playersContainer } = await ensureInitialized();
       const { resources: players } = await playersContainer.items

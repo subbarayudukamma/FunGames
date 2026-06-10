@@ -1,12 +1,14 @@
 const { app } = require("@azure/functions");
 const { ensureInitialized } = require("./cosmosClient");
 const { generateCard } = require("./bingoLogic");
+const { validatePlayroom, playroomDenied } = require("./playroom");
 
 app.http("join", {
   methods: ["POST"],
   authLevel: "anonymous",
   route: "join",
   handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
     try {
       const { alias, displayName, teamName } = await request.json();
 
