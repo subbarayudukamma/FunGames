@@ -211,7 +211,9 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ **Raffle logging** — all draws timestamped and included in JSON export
 - ✅ Admin dashboard with leaderboard
 - ✅ **Team name** — players enter their team on join, visible in admin lobby
-- ✅ **Roster-only answers** — players can only select from registered participants (no free-text); multiple people can be selected per question as tags/chips
+- ✅ **Roster-only answers** — players can only select from registered participants (no free-text); same-team members excluded; multiple people can be selected per question as tags/chips
+- ✅ **Alias disambiguation** — suggestions show `@alias` next to display name to distinguish people with the same name; search matches on name or alias
+- ✅ **Re-join support** — if a player re-joins with same alias but different name/team, their info is updated while preserving card and progress
 - ✅ **Structured connections export** — export includes a `connections` array mapping every player pair with the question that connected them (for follow-up emails)
 - ✅ **Question import** — import from .txt file or paste (one question per line, auto-saves immediately). "Clear All" button to remove all questions.
 - ✅ **Answer verification** — admin can expand win queue items to view the player's answers for the winning line before claiming

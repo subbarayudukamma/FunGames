@@ -50,8 +50,9 @@ The app supports two game modes:
 - Enters Microsoft alias + display name + team name → joins lobby
 - Waits until admin releases the game
 - Sees personalized 5×5 bingo card (randomized layout)
-- Taps a cell → modal with full question + search input that filters the participant roster (only registered players can be selected, no free-text). Multiple people can be selected as tags/chips with 'x' to remove.
+- Taps a cell → modal with full question + search input that filters the participant roster (only registered players can be selected, no free-text; same-team members excluded). Players are searchable by name or alias. Multiple people can be selected as tags/chips with 'x' to remove.
 - Can see own progress (completed cells highlighted in green)
+- If a player quits and re-joins with the same alias but different name/team, their record is updated (card and progress preserved)
 - Polls every 5s for game state changes (+ manual refresh button)
 - Completing a line (row/col/diagonal/first5/blackout) automatically notifies the admin for verification
 - When admin officially claims a specific line, all players see:
