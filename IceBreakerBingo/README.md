@@ -176,7 +176,8 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 
 ## Game Flow
 
-1. Admin loads questions at `/admin?key=SECRET` (type, generate, or import from file/paste)
+### Classic Mode (Traditional Bingo)
+1. Admin selects **Classic Bingo** mode and loads questions at `/admin?key=SECRET`
 2. Players join via QR code → enter alias + name + team
 3. Admin clicks "Release Bingo" → players see randomized 5×5 cards
 4. Players mingle and submit answers (autocomplete suggests participant names)
@@ -185,22 +186,36 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 7. Admin clicks "Claim" → all players see red rectangle on that specific line
 8. Players focus on unclaimed lines; repeat until game ends
 
+### Raffle Mode (Weighted Raffle)
+1. Admin selects **Raffle Bingo** mode and loads questions at `/admin?key=SECRET`
+2. Players join via QR code → enter alias + name + team
+3. Admin clicks "Release Bingo" → players see randomized 5×5 cards
+4. Players mingle and fill as many boxes as possible (each box = 1 raffle entry)
+5. Everyone gets at least 1 entry (free center space)
+6. Admin clicks "Close Game" → players see "Raffle Time!" screen
+7. Admin clicks "Draw Next Winner" repeatedly → weighted random selection
+8. Winners are removed from pool (can only win once)
+9. All results are logged and included in the JSON export
+
 ## Features
 
+- ✅ **Two game modes**: Classic Bingo (line wins) and Raffle Bingo (weighted raffle draw)
 - ✅ 5×5 bingo grid with free center square
 - ✅ Randomized card per player
 - ✅ Real-time progress via 5-second polling
 - ✅ Per-line win detection — 5 rows, 5 columns, 2 diagonals, first 5, blackout (14 categories)
-- ✅ **Notification queue** — players auto-queue when completing a line
-- ✅ **Admin verification flow** — verify in person, then claim or dismiss
+- ✅ **Notification queue** — players auto-queue when completing a line (classic mode)
+- ✅ **Admin verification flow** — verify in person, then claim or dismiss (classic mode)
 - ✅ Claimed lines shown with red rectangle + dimmed on all players' cards
+- ✅ **Raffle mode** — each box = 1 entry; weighted random draw; winners removed from pool
+- ✅ **Raffle logging** — all draws timestamped and included in JSON export
 - ✅ Admin dashboard with leaderboard
 - ✅ **Team name** — players enter their team on join, visible in admin lobby
 - ✅ **Answer autocomplete** — suggests participant names from roster as you type (with team info), also allows free-text entry
 - ✅ **Question import** — import from .txt file or paste (one question per line, auto-saves immediately). "Clear All" button to remove all questions.
 - ✅ **Answer verification** — admin can expand win queue items to view the player's answers for the winning line before claiming
 - ✅ **View submitted answers** — players can tap completed cells to see what they entered
-- ✅ **Post-game export** — admin can export all player answers as structured JSON so participants can stay in touch with people they met
+- ✅ **Post-game export** — admin can export all player answers + raffle results as structured JSON
 - ✅ Generate 30 random placeholder questions with one click
 - ✅ Game reset automatically returns all players to the landing page
 - ✅ Mobile-responsive design

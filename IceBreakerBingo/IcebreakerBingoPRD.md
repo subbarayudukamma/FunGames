@@ -4,6 +4,10 @@
 
 A lightweight, mobile-first web app for team icebreaker bingo at events. Players scan a QR code, enter their alias/name, and play bingo by finding colleagues who match specific questions. Admins control the game flow and track progress in real-time (via polling).
 
+The app supports two game modes:
+- **Classic Bingo**: Traditional row/column/diagonal wins with admin verification
+- **Raffle Bingo**: Each completed box = 1 raffle entry; admin draws weighted random winners at the end
+
 ---
 
 ## 2. Goals & Constraints
@@ -57,29 +61,37 @@ A lightweight, mobile-first web app for team icebreaker bingo at events. Players
 
 ### 4.2 Admin
 - Navigates to `/admin?key=<shared-secret>`
+- **Before game**: Selects game mode — **Classic Bingo** (rows/cols/diagonals win) or **Raffle Bingo** (each box = 1 raffle entry). Mode cannot be changed after releasing cards.
 - **Before game**: Manages bingo questions (add/edit/delete, need 25+ questions). Can generate 30 random placeholder questions with one click. Can import questions from a .txt file or by pasting them (one per line).
 - **Before game**: Sees player count in lobby (who's registered and ready)
 - **During game**: Clicks "Release Bingo" to start the game
-- **During game**: Dashboard shows:
+- **During game (Classic mode)**: Dashboard shows:
   - Who completed first 5 questions
   - Who completed a full row (each of 5 rows tracked separately)
   - Who completed a full column (each of 5 columns tracked separately)
   - Who completed a diagonal (each of 2 diagonals tracked separately)
   - Who completed the full card (blackout)
   - Leaderboard sorted by completion count
-- **During game**: Receives real-time **notification queue** when players complete a line. Multiple players queue up per category. Admin verifies each one physically, then either:
+- **During game (Classic mode)**: Receives real-time **notification queue** when players complete a line. Multiple players queue up per category. Admin verifies each one physically, then either:
   - **Claims** → officially awards that specific line (row-1, col-3, diag-2, etc.). All players see a red rectangle on that line on their card.
   - **Dismisses** → removes from queue without claiming (failed verification).
-- **Win categories** (14 total): row-1 through row-5, col-1 through col-5, diag-1, diag-2, first5, blackout
+- **During game (Raffle mode)**: Sees leaderboard of completion counts. No win queue needed — players simply accumulate entries.
+- **Closing game (Raffle mode)**: Admin clicks "Close Game" to stop submissions, then draws winners one at a time:
+  - Each player's completed box count = their number of raffle entries (weighted random)
+  - Free space = 1 entry minimum for everyone who joined
+  - Winners are removed from the pool after being drawn (can only win once)
+  - All draws are logged with timestamp and entry counts
+- **Win categories (Classic)** (14 total): row-1 through row-5, col-1 through col-5, diag-1, diag-2, first5, blackout
 - **After game**: Can reset game for another round. All players in lobby/play are automatically returned to the landing page.
-- **After game**: Can **export** all player data as structured JSON containing each player's answers — the questions they completed and the names they entered. This allows players to stay in touch with the people they interacted with during the event.
+- **After game**: Can **export** all player data as structured JSON containing each player's answers, and raffle results (if raffle mode was used). This allows players to stay in touch with the people they interacted with during the event.
 
 ---
 
 ## 5. Game Flow
 
+### Classic Mode
 ```
-[Admin loads questions] → [Players join via QR] → [Admin sees lobby count]
+[Admin selects "Classic Bingo" mode] → [Admin loads questions] → [Players join via QR]
        ↓
 [Admin clicks "Release Bingo"] → [Players see their randomized cards]
        ↓
@@ -90,6 +102,23 @@ A lightweight, mobile-first web app for team icebreaker bingo at events. Players
 [Claimed win → All players see red rectangle on that line]
        ↓
 [Admin resets for next round → Players auto-return to landing page]
+```
+
+### Raffle Mode
+```
+[Admin selects "Raffle Bingo" mode] → [Admin loads questions] → [Players join via QR]
+       ↓
+[Admin clicks "Release Bingo"] → [Players see their randomized cards]
+       ↓
+[Players mingle & fill as many boxes as possible] → [Each box = 1 raffle entry]
+       ↓
+[Admin clicks "Close Game"] → [Players see "Raffle Time!" screen]
+       ↓
+[Admin clicks "Draw Next Winner" repeatedly] → [Weighted random; winner removed from pool]
+       ↓
+[All draws logged] → [Included in JSON export]
+       ↓
+[Admin resets for next round]
 ```
 
 ---
@@ -106,7 +135,8 @@ A lightweight, mobile-first web app for team icebreaker bingo at events. Players
     { "id": "q2", "text": "Find someone who speaks 3+ languages" }
     // ... 25+ questions
   ],
-  "gameState": "lobby" | "active" | "ended",
+  "gameState": "lobby" | "active" | "closed" | "ended",
+  "gameMode": "classic" | "raffle",
   "adminKey": "shared-secret-here",
   "claimedWins": {
     "row-0": { "claimed": true, "winner": "skamma", "claimedAt": "ISO timestamp" },
@@ -119,6 +149,10 @@ A lightweight, mobile-first web app for team icebreaker bingo at events. Players
     { "category": "row-3", "player": "jdoe", "displayName": "Jane Doe", "completedAt": "ISO timestamp" },
     { "category": "col-1", "player": "bwilson", "displayName": "Bob Wilson", "completedAt": "ISO timestamp" }
   ],
+  "raffleResults": [
+    { "winner": "jdoe", "displayName": "Jane Doe", "entries": 12, "totalPoolEntries": 150, "drawnAt": "ISO timestamp", "drawNumber": 1 }
+  ],
+  "closedAt": "ISO timestamp",
   "createdAt": "ISO timestamp"
 }
 ```
@@ -154,21 +188,25 @@ A lightweight, mobile-first web app for team icebreaker bingo at events. Players
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/join` | Player joins (alias + name + team) → returns card if game active |
-| GET | `/api/game-state` | Returns current game state + claimed wins + queue count |
+| GET | `/api/game-state` | Returns current game state + mode + claimed wins + queue count + raffle results |
 | GET | `/api/my-card?alias={alias}` | Returns player's card with current answers + claimed wins |
-| POST | `/api/submit-answer` | Submit answer for a cell; auto-notifies admin on line completion |
+| POST | `/api/submit-answer` | Submit answer for a cell; auto-notifies admin on line completion (classic mode only) |
 | GET | `/api/roster` | Returns all players' names + teams for answer autocomplete |
 | GET | `/api/game-admin/players?key={key}` | Admin: list all players + stats |
 | GET | `/api/game-admin/dashboard?key={key}` | Admin: completion stats (rows, cols, blackout) |
 | POST | `/api/game-admin/release?key={key}` | Admin: change game state to active |
-| POST | `/api/game-admin/reset?key={key}` | Admin: reset game |
+| POST | `/api/game-admin/reset?key={key}` | Admin: reset game (clears mode, raffle results, all players) |
 | GET | `/api/game-admin/questions?key={key}` | Admin: get all questions |
 | POST | `/api/game-admin/questions?key={key}` | Admin: save questions list |
-| GET | `/api/game-admin/win-queue?key={key}` | Admin: get pending verification queue |
-| POST | `/api/game-admin/claim-win?key={key}` | Admin: verify & claim `{category, winner}` |
+| POST | `/api/game-admin/set-mode?key={key}` | Admin: set game mode `{mode: "classic"\|"raffle"}` (lobby only) |
+| POST | `/api/game-admin/close-game?key={key}` | Admin: close game for raffle drawing (active → closed) |
+| POST | `/api/game-admin/draw-raffle?key={key}` | Admin: draw one weighted random winner (closed state only) |
+| POST | `/api/game-admin/reset-raffle?key={key}` | Admin: clear all raffle draws to re-draw |
+| GET | `/api/game-admin/win-queue?key={key}` | Admin: get pending verification queue (classic mode) |
+| POST | `/api/game-admin/claim-win?key={key}` | Admin: verify & claim `{category, winner}` (classic mode) |
 | POST | `/api/game-admin/unclaim-win?key={key}` | Admin: unclaim a win `{category}` |
 | POST | `/api/game-admin/dismiss-queue-item?key={key}` | Admin: dismiss queue item `{category, player}` |
-| GET | `/api/game-admin/export?key={key}` | Admin: export all player answers (for post-event networking) |
+| GET | `/api/game-admin/export?key={key}` | Admin: export all player answers + raffle results |
 
 ---
 

@@ -166,6 +166,26 @@ export default function Play() {
     );
   }
 
+  if (gameState === 'closed') {
+    return (
+      <div className="container">
+        <div className="header">
+          <h1>🎯 Icebreaker Bingo</h1>
+        </div>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h2>🎟️ Game Closed — Raffle Time!</h2>
+          <p style={{ marginTop: '0.5rem' }}>
+            You completed <strong>{playerData?.completedCount || 0}/25</strong> squares
+            = <strong>{playerData?.completedCount || 0}</strong> raffle entries!
+          </p>
+          <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+            Winners are being drawn now. Good luck! 🍀
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const completedCount = playerData?.completedCount || 0;
 
   return (

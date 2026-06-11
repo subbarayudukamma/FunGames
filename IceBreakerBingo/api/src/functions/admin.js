@@ -142,8 +142,10 @@ app.http("adminReset", {
       // Reset game state
       const { resource: config } = await gameContainer.item("config", "game").read();
       config.gameState = "lobby";
+      config.gameMode = "classic";
       config.claimedWins = {};
       config.winQueue = [];
+      config.raffleResults = [];
       await gameContainer.item("config", "game").replace(config);
 
       // Delete all players
@@ -452,9 +454,176 @@ app.http("adminExport", {
           })),
       }));
 
-      return { status: 200, jsonBody: { players: exportData, exportedAt: new Date().toISOString() } };
+      return { status: 200, jsonBody: { players: exportData, gameMode: config.gameMode || 'classic', raffleResults: config.raffleResults || [], exportedAt: new Date().toISOString() } };
     } catch (error) {
       context.log("Error in adminExport:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
+// POST /api/game-admin/set-mode
+app.http("adminSetMode", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "game-admin/set-mode",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const { mode } = await request.json();
+
+      if (!["classic", "raffle"].includes(mode)) {
+        return { status: 400, jsonBody: { error: "mode must be 'classic' or 'raffle'" } };
+      }
+
+      const { gameContainer } = await ensureInitialized();
+      const { resource: config } = await gameContainer.item("config", "game").read();
+
+      if (config.gameState !== "lobby") {
+        return { status: 400, jsonBody: { error: "Game mode can only be changed in lobby state" } };
+      }
+
+      config.gameMode = mode;
+      await gameContainer.item("config", "game").replace(config);
+
+      return { status: 200, jsonBody: { message: `Game mode set to ${mode}`, gameMode: mode } };
+    } catch (error) {
+      context.log("Error in adminSetMode:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
+// POST /api/game-admin/close-game
+app.http("adminCloseGame", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "game-admin/close-game",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const { gameContainer } = await ensureInitialized();
+      const { resource: config } = await gameContainer.item("config", "game").read();
+
+      if (config.gameState !== "active") {
+        return { status: 400, jsonBody: { error: "Game can only be closed from active state" } };
+      }
+
+      config.gameState = "closed";
+      config.closedAt = new Date().toISOString();
+      await gameContainer.item("config", "game").replace(config);
+
+      return { status: 200, jsonBody: { message: "Game closed! Ready for raffle draw.", gameState: "closed" } };
+    } catch (error) {
+      context.log("Error in adminCloseGame:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
+// POST /api/game-admin/draw-raffle
+app.http("adminDrawRaffle", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "game-admin/draw-raffle",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const { gameContainer, playersContainer } = await ensureInitialized();
+      const { resource: config } = await gameContainer.item("config", "game").read();
+
+      if (config.gameState !== "closed") {
+        return { status: 400, jsonBody: { error: "Game must be closed before drawing raffle winners" } };
+      }
+
+      if (!config.raffleResults) config.raffleResults = [];
+
+      // Get all players
+      const { resources: players } = await playersContainer.items
+        .query("SELECT c.alias, c.displayName, c.completedCount FROM c WHERE c.partitionKey = 'player'")
+        .fetchAll();
+
+      // Exclude previous winners
+      const previousWinners = new Set(config.raffleResults.map(r => r.winner));
+      const eligiblePlayers = players.filter(p => !previousWinners.has(p.alias));
+
+      if (eligiblePlayers.length === 0) {
+        return { status: 400, jsonBody: { error: "No eligible players remaining in the pool" } };
+      }
+
+      // Build weighted pool
+      const pool = [];
+      for (const player of eligiblePlayers) {
+        const entries = player.completedCount || 1;
+        for (let i = 0; i < entries; i++) {
+          pool.push(player);
+        }
+      }
+
+      // Draw random winner
+      const winnerIndex = Math.floor(Math.random() * pool.length);
+      const winner = pool[winnerIndex];
+
+      const result = {
+        winner: winner.alias,
+        displayName: winner.displayName,
+        entries: winner.completedCount || 1,
+        totalPoolEntries: pool.length,
+        drawnAt: new Date().toISOString(),
+        drawNumber: config.raffleResults.length + 1,
+      };
+
+      config.raffleResults.push(result);
+      await gameContainer.item("config", "game").replace(config);
+
+      return {
+        status: 200,
+        jsonBody: {
+          ...result,
+          remainingPlayers: eligiblePlayers.length - 1,
+          totalPlayers: players.length,
+        },
+      };
+    } catch (error) {
+      context.log("Error in adminDrawRaffle:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
+// POST /api/game-admin/reset-raffle
+app.http("adminResetRaffle", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "game-admin/reset-raffle",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const { gameContainer } = await ensureInitialized();
+      const { resource: config } = await gameContainer.item("config", "game").read();
+
+      config.raffleResults = [];
+      await gameContainer.item("config", "game").replace(config);
+
+      return { status: 200, jsonBody: { message: "Raffle results cleared", raffleResults: [] } };
+    } catch (error) {
+      context.log("Error in adminResetRaffle:", error);
       return { status: 500, jsonBody: { error: "Internal server error" } };
     }
   },

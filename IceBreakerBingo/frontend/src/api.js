@@ -131,3 +131,33 @@ export async function adminExport(key) {
   const res = await fetch(withPlayroom(`${API_BASE}/game-admin/export?key=${encodeURIComponent(key)}`));
   return res.json();
 }
+
+export async function adminSetMode(key, mode) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/set-mode?key=${encodeURIComponent(key)}`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode }),
+  });
+  return res.json();
+}
+
+export async function adminCloseGame(key) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/close-game?key=${encodeURIComponent(key)}`), {
+    method: 'POST',
+  });
+  return res.json();
+}
+
+export async function adminDrawRaffle(key) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/draw-raffle?key=${encodeURIComponent(key)}`), {
+    method: 'POST',
+  });
+  return res.json();
+}
+
+export async function adminResetRaffle(key) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/reset-raffle?key=${encodeURIComponent(key)}`), {
+    method: 'POST',
+  });
+  return res.json();
+}

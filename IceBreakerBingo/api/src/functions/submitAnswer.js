@@ -60,39 +60,41 @@ app.http("submitAnswer", {
       player.completedColumns = wins.completedColumns;
       player.completedDiagonals = wins.completedDiagonals;
 
-      // Detect NEW wins and add to notification queue
+      // Detect NEW wins and add to notification queue (classic mode only)
       const newNotifications = [];
       const now = new Date().toISOString();
 
-      // Check first5
-      if (wins.completedCount >= 5 && previousWins.completedCount < 5) {
-        newNotifications.push({ category: "first5", player: player.alias, displayName: player.displayName, completedAt: now });
-      }
-
-      // Check new rows
-      for (const rowIdx of wins.completedRows) {
-        if (!previousWins.completedRows.includes(rowIdx)) {
-          newNotifications.push({ category: `row-${rowIdx}`, player: player.alias, displayName: player.displayName, completedAt: now });
+      if ((config.gameMode || "classic") === "classic") {
+        // Check first5
+        if (wins.completedCount >= 5 && previousWins.completedCount < 5) {
+          newNotifications.push({ category: "first5", player: player.alias, displayName: player.displayName, completedAt: now });
         }
-      }
 
-      // Check new columns
-      for (const colIdx of wins.completedColumns) {
-        if (!previousWins.completedColumns.includes(colIdx)) {
-          newNotifications.push({ category: `col-${colIdx}`, player: player.alias, displayName: player.displayName, completedAt: now });
+        // Check new rows
+        for (const rowIdx of wins.completedRows) {
+          if (!previousWins.completedRows.includes(rowIdx)) {
+            newNotifications.push({ category: `row-${rowIdx}`, player: player.alias, displayName: player.displayName, completedAt: now });
+          }
         }
-      }
 
-      // Check new diagonals
-      for (const diagIdx of wins.completedDiagonals) {
-        if (!previousWins.completedDiagonals.includes(diagIdx)) {
-          newNotifications.push({ category: `diag-${diagIdx}`, player: player.alias, displayName: player.displayName, completedAt: now });
+        // Check new columns
+        for (const colIdx of wins.completedColumns) {
+          if (!previousWins.completedColumns.includes(colIdx)) {
+            newNotifications.push({ category: `col-${colIdx}`, player: player.alias, displayName: player.displayName, completedAt: now });
+          }
         }
-      }
 
-      // Check blackout
-      if (wins.hasBlackout && !previousWins.hasBlackout) {
-        newNotifications.push({ category: "blackout", player: player.alias, displayName: player.displayName, completedAt: now });
+        // Check new diagonals
+        for (const diagIdx of wins.completedDiagonals) {
+          if (!previousWins.completedDiagonals.includes(diagIdx)) {
+            newNotifications.push({ category: `diag-${diagIdx}`, player: player.alias, displayName: player.displayName, completedAt: now });
+          }
+        }
+
+        // Check blackout
+        if (wins.hasBlackout && !previousWins.hasBlackout) {
+          newNotifications.push({ category: "blackout", player: player.alias, displayName: player.displayName, completedAt: now });
+        }
       }
 
       // Add notifications to game config queue

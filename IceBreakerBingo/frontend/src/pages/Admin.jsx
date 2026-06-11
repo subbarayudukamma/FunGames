@@ -12,6 +12,10 @@ import {
   adminGetWinQueue,
   adminDismissQueueItem,
   adminExport,
+  adminSetMode,
+  adminCloseGame,
+  adminDrawRaffle,
+  adminResetRaffle,
   getGameState,
 } from '../api';
 
@@ -28,6 +32,9 @@ export default function Admin() {
   const [playerCount, setPlayerCount] = useState(0);
   const [claimedWins, setClaimedWins] = useState({});
   const [winQueue, setWinQueue] = useState([]);
+  const [gameMode, setGameMode] = useState('classic');
+  const [raffleResults, setRaffleResults] = useState([]);
+  const [lastDrawn, setLastDrawn] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -38,6 +45,8 @@ export default function Admin() {
       setGameState(state.gameState);
       setPlayerCount(state.playerCount);
       setClaimedWins(state.claimedWins || {});
+      setGameMode(state.gameMode || 'classic');
+      setRaffleResults(state.raffleResults || []);
 
       if (activeTab === 'lobby') {
         const data = await adminGetPlayers(adminKey);
@@ -80,6 +89,47 @@ export default function Admin() {
     setLoading(true);
     const result = await adminReset(adminKey);
     setMessage(result.message || result.error);
+    setLoading(false);
+    fetchData();
+  };
+
+  const handleSetMode = async (mode) => {
+    setLoading(true);
+    const result = await adminSetMode(adminKey, mode);
+    setMessage(result.message || result.error);
+    setLoading(false);
+    fetchData();
+  };
+
+  const handleCloseGame = async () => {
+    if (!window.confirm('Close the game? Players will no longer be able to submit answers. Ready for raffle draw!')) return;
+    setLoading(true);
+    const result = await adminCloseGame(adminKey);
+    setMessage(result.message || result.error);
+    setLoading(false);
+    fetchData();
+  };
+
+  const handleDrawRaffle = async () => {
+    setLoading(true);
+    setLastDrawn(null);
+    const result = await adminDrawRaffle(adminKey);
+    if (result.error) {
+      setMessage(result.error);
+    } else {
+      setLastDrawn(result);
+      setMessage(`🎉 Winner #${result.drawNumber}: ${result.displayName} (${result.entries} entries)`);
+    }
+    setLoading(false);
+    fetchData();
+  };
+
+  const handleResetRaffle = async () => {
+    if (!window.confirm('Clear all raffle results? You can re-draw after this.')) return;
+    setLoading(true);
+    const result = await adminResetRaffle(adminKey);
+    setMessage(result.message || result.error);
+    setLastDrawn(null);
     setLoading(false);
     fetchData();
   };
@@ -151,6 +201,8 @@ export default function Admin() {
         <p>
           Game Status: <span className={`status-${gameState}`}><strong>{gameState.toUpperCase()}</strong></span>
           {' | '}
+          Mode: <strong>{gameMode === 'raffle' ? '🎟️ Raffle' : '🏆 Classic'}</strong>
+          {' | '}
           Players: <strong>{playerCount}</strong>
         </p>
       </div>
@@ -162,16 +214,56 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Game Mode Selector - visible in lobby */}
+      {gameState === 'lobby' && (
+        <div className="card">
+          <h2>🎮 Game Mode</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+            Choose how winners are determined. This cannot be changed after releasing cards.
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className={`btn ${gameMode === 'classic' ? 'btn-primary' : ''}`}
+              style={{ flex: 1 }}
+              onClick={() => handleSetMode('classic')}
+              disabled={loading || gameMode === 'classic'}
+            >
+              🏆 Classic Bingo
+              <br /><small style={{ fontWeight: 'normal' }}>Rows, columns, diagonals win</small>
+            </button>
+            <button
+              className={`btn ${gameMode === 'raffle' ? 'btn-primary' : ''}`}
+              style={{ flex: 1 }}
+              onClick={() => handleSetMode('raffle')}
+              disabled={loading || gameMode === 'raffle'}
+            >
+              🎟️ Raffle Bingo
+              <br /><small style={{ fontWeight: 'normal' }}>Each box = 1 raffle entry</small>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Game Controls */}
       <div className="card" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <button
           className="btn btn-success"
           style={{ flex: 1, minWidth: '120px' }}
           onClick={handleRelease}
-          disabled={loading || gameState === 'active'}
+          disabled={loading || gameState === 'active' || gameState === 'closed'}
         >
           🚀 Release Bingo
         </button>
+        {gameMode === 'raffle' && gameState === 'active' && (
+          <button
+            className="btn btn-warning"
+            style={{ flex: 1, minWidth: '120px' }}
+            onClick={handleCloseGame}
+            disabled={loading}
+          >
+            🔒 Close Game
+          </button>
+        )}
         <button
           className="btn btn-danger"
           style={{ flex: 1, minWidth: '120px' }}
@@ -182,8 +274,8 @@ export default function Admin() {
         </button>
       </div>
 
-      {/* Win Notification Queue - visible when game is active */}
-      {gameState === 'active' && (
+      {/* Win Notification Queue - visible when game is active AND classic mode */}
+      {gameState === 'active' && gameMode === 'classic' && (
         <div className="card">
           <h2>🔔 Verification Queue {winQueue.length > 0 && <span className="badge badge-warning" style={{ marginLeft: '0.5rem' }}>{winQueue.length} pending</span>}</h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
@@ -274,6 +366,95 @@ export default function Admin() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Raffle Draw Panel - visible when game is closed and raffle mode */}
+      {gameState === 'closed' && gameMode === 'raffle' && (
+        <div className="card">
+          <h2>🎟️ Raffle Draw</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+            Game is closed! Each completed box gave players raffle entries. Draw winners one at a time.
+          </p>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <button
+              className="btn btn-success"
+              style={{ flex: 1 }}
+              onClick={handleDrawRaffle}
+              disabled={loading}
+            >
+              🎰 Draw Next Winner
+            </button>
+            <button
+              className="btn"
+              style={{ width: 'auto', background: 'var(--border)' }}
+              onClick={handleResetRaffle}
+              disabled={loading || raffleResults.length === 0}
+              title="Clear all draws and start over"
+            >
+              ↺ Reset Draws
+            </button>
+          </div>
+
+          {/* Last drawn winner highlight */}
+          {lastDrawn && (
+            <div style={{
+              padding: '1rem', marginBottom: '1rem', borderRadius: '12px',
+              background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+              textAlign: 'center', border: '2px solid #f59e0b',
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>🎉</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{lastDrawn.displayName}</div>
+              <div style={{ fontSize: '0.85rem', color: '#92400e', marginTop: '0.25rem' }}>
+                Winner #{lastDrawn.drawNumber} • {lastDrawn.entries} entries out of {lastDrawn.totalPoolEntries} total
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#92400e', marginTop: '0.25rem' }}>
+                {lastDrawn.remainingPlayers} players remaining in pool
+              </div>
+            </div>
+          )}
+
+          {/* Raffle results log */}
+          {raffleResults.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>🏆 Winners Log ({raffleResults.length})</h3>
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Winner</th>
+                    <th>Entries</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {raffleResults.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.drawNumber || i + 1}</td>
+                      <td><strong>{r.displayName}</strong><br /><small>{r.winner}</small></td>
+                      <td>{r.entries}</td>
+                      <td><small>{new Date(r.drawnAt).toLocaleTimeString()}</small></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Raffle mode info when game is active */}
+      {gameState === 'active' && gameMode === 'raffle' && (
+        <div className="card" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+          <h2>🎟️ Raffle Mode Active</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            Players are collecting raffle entries by completing boxes. Each box = 1 entry into the weighted raffle.
+            When ready, click <strong>Close Game</strong> to stop submissions and begin drawing winners.
+          </p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+            💡 Everyone who joined gets at least 1 entry (free space).
+          </p>
         </div>
       )}
 

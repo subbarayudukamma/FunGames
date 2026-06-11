@@ -21,10 +21,12 @@ app.http("gameState", {
         status: 200,
         jsonBody: {
           gameState: config.gameState,
+          gameMode: config.gameMode || "classic",
           playerCount: players[0] || 0,
           questionCount: config.questions.length,
           claimedWins: config.claimedWins || {},
           winQueueCount: (config.winQueue || []).length,
+          raffleResults: config.raffleResults || [],
         },
       };
     } catch (error) {
