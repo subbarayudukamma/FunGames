@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import PlayerEntry from './pages/PlayerEntry';
 import Play from './pages/Play';
 import Admin from './pages/Admin';
+import VersionInfo from './VersionInfo';
 import { hasPlayroom } from './api';
 import './App.css';
 
@@ -39,6 +40,7 @@ function App() {
         <Route path="/play" element={<Play />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
+      <VersionInfo />
     </BrowserRouter>
   );
 }
