@@ -34,10 +34,20 @@ app.http("submitAnswer", {
         .query("SELECT c.alias, c.displayName, c.teamName FROM c WHERE c.partitionKey = 'player'")
         .fetchAll();
       const validAliases = new Set(allPlayers.map(p => p.alias));
+      const playerLookup = Object.fromEntries(allPlayers.map(p => [p.alias, p]));
+
+      // Get submitting player's team
+      const submitter = playerLookup[alias.toLowerCase()];
+      const submitterTeam = submitter?.teamName || '';
 
       for (const person of answer) {
         if (!person.alias || !validAliases.has(person.alias)) {
           return { status: 400, jsonBody: { error: `Invalid player: ${person.alias || person.displayName || 'unknown'}. Please select from the roster.` } };
+        }
+        // Cannot pick someone from the same team
+        const target = playerLookup[person.alias];
+        if (submitterTeam && target?.teamName && target.teamName === submitterTeam) {
+          return { status: 400, jsonBody: { error: `Cannot select ${person.displayName} — they are on your same team (${submitterTeam}).` } };
         }
       }
 

@@ -63,9 +63,11 @@ export default function Play() {
     if (value.trim().length > 0) {
       const lower = value.toLowerCase();
       const alreadySelected = new Set(selectedPeople.map(p => p.alias));
+      const playerTeam = localStorage.getItem('bingo_team') || '';
       const matches = roster.filter(r =>
         !alreadySelected.has(r.alias) &&
         r.alias !== alias &&
+        r.teamName !== playerTeam &&
         (r.displayName.toLowerCase().includes(lower) ||
         (r.teamName && r.teamName.toLowerCase().includes(lower)))
       ).slice(0, 8);
