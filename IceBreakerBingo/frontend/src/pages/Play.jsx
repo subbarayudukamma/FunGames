@@ -181,21 +181,40 @@ export default function Play() {
   }
 
   if (gameState === 'closed') {
+    const myAlias = alias;
+    const myWin = (playerData?.raffleResults || []).find(r => r.winner === myAlias);
+
     return (
       <div className="container">
         <div className="header">
           <h1>🎯 Icebreaker Bingo</h1>
         </div>
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h2>🎟️ Game Closed — Raffle Time!</h2>
-          <p style={{ marginTop: '0.5rem' }}>
-            You completed <strong>{playerData?.completedCount || 0}/25</strong> squares
-            = <strong>{playerData?.completedCount || 0}</strong> raffle entries!
-          </p>
-          <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-            Winners are being drawn now. Good luck! 🍀
-          </p>
-        </div>
+        {myWin ? (
+          <div className="card" style={{ textAlign: 'center', background: 'linear-gradient(135deg, #fef3c7, #fde68a)', border: '2px solid #f59e0b' }}>
+            <div style={{ fontSize: '3rem' }}>🎉🏆🎉</div>
+            <h2 style={{ color: '#78350f' }}>You Won!</h2>
+            <p style={{ fontSize: '1.1rem', marginTop: '0.5rem', fontWeight: 600 }}>
+              Winner #{myWin.drawNumber}
+            </p>
+            <p style={{ fontSize: '1rem', marginTop: '0.75rem', color: '#92400e', fontWeight: 600 }}>
+              🎤 Please come see the Game Admin to claim your prize!
+            </p>
+            <p style={{ fontSize: '0.85rem', marginTop: '0.5rem', color: '#92400e' }}>
+              You had {myWin.entries} raffle entries
+            </p>
+          </div>
+        ) : (
+          <div className="card" style={{ textAlign: 'center' }}>
+            <h2>🎟️ Game Closed — Raffle Time!</h2>
+            <p style={{ marginTop: '0.5rem' }}>
+              You completed <strong>{playerData?.completedCount || 0}/25</strong> squares
+              = <strong>{playerData?.completedCount || 0}</strong> raffle entries!
+            </p>
+            <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+              Winners are being drawn now. Good luck! 🍀
+            </p>
+          </div>
+        )}
       </div>
     );
   }

@@ -400,13 +400,15 @@ export default function Admin() {
           {/* Last drawn winner highlight */}
           {lastDrawn && (
             <div style={{
-              padding: '1rem', marginBottom: '1rem', borderRadius: '12px',
+              padding: '1.25rem', marginBottom: '1rem', borderRadius: '12px',
               background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
               textAlign: 'center', border: '2px solid #f59e0b',
             }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>🎉</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{lastDrawn.displayName}</div>
-              <div style={{ fontSize: '0.85rem', color: '#92400e', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '1rem', color: '#78350f', marginTop: '0.25rem' }}>@{lastDrawn.winner}</div>
+              <div style={{ fontSize: '0.9rem', color: '#92400e', marginTop: '0.15rem' }}>{lastDrawn.teamName || 'No team'}</div>
+              <div style={{ fontSize: '0.85rem', color: '#92400e', marginTop: '0.5rem' }}>
                 Winner #{lastDrawn.drawNumber} • {lastDrawn.entries} entries out of {lastDrawn.totalPoolEntries} total
               </div>
               <div style={{ fontSize: '0.8rem', color: '#92400e', marginTop: '0.25rem' }}>
@@ -423,7 +425,9 @@ export default function Admin() {
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Winner</th>
+                    <th>Name</th>
+                    <th>Alias</th>
+                    <th>Team</th>
                     <th>Entries</th>
                     <th>Time</th>
                   </tr>
@@ -432,7 +436,9 @@ export default function Admin() {
                   {raffleResults.map((r, i) => (
                     <tr key={i}>
                       <td>{r.drawNumber || i + 1}</td>
-                      <td><strong>{r.displayName}</strong><br /><small>{r.winner}</small></td>
+                      <td><strong>{r.displayName}</strong></td>
+                      <td>@{r.winner}</td>
+                      <td>{r.teamName || '—'}</td>
                       <td>{r.entries}</td>
                       <td><small>{new Date(r.drawnAt).toLocaleTimeString()}</small></td>
                     </tr>

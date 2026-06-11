@@ -569,7 +569,7 @@ app.http("adminDrawRaffle", {
 
       // Get all players
       const { resources: players } = await playersContainer.items
-        .query("SELECT c.alias, c.displayName, c.completedCount FROM c WHERE c.partitionKey = 'player'")
+        .query("SELECT c.alias, c.displayName, c.teamName, c.completedCount FROM c WHERE c.partitionKey = 'player'")
         .fetchAll();
 
       // Exclude previous winners
@@ -596,6 +596,7 @@ app.http("adminDrawRaffle", {
       const result = {
         winner: winner.alias,
         displayName: winner.displayName,
+        teamName: winner.teamName || '',
         entries: winner.completedCount || 1,
         totalPoolEntries: pool.length,
         drawnAt: new Date().toISOString(),

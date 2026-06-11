@@ -38,6 +38,7 @@ app.http("myCard", {
           completedColumns: player.completedColumns || [],
           completedDiagonals: player.completedDiagonals || [],
           claimedWins: config.claimedWins || {},
+          raffleResults: config.raffleResults || [],
         },
       };
     } catch (error) {
