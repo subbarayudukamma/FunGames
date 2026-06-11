@@ -69,6 +69,7 @@ export default function Play() {
         r.alias !== alias &&
         r.teamName !== playerTeam &&
         (r.displayName.toLowerCase().includes(lower) ||
+        r.alias.toLowerCase().includes(lower) ||
         (r.teamName && r.teamName.toLowerCase().includes(lower)))
       ).slice(0, 8);
       setSuggestions(matches);
@@ -343,6 +344,7 @@ export default function Play() {
                       {suggestions.map((s, i) => (
                         <li key={i} onMouseDown={() => selectSuggestion(s)}>
                           <strong>{s.displayName}</strong>
+                          <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>@{s.alias}</span>
                           {s.teamName && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>({s.teamName})</span>}
                         </li>
                       ))}

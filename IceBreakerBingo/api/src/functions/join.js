@@ -28,6 +28,20 @@ app.http("join", {
       const playerId = `player-${alias.toLowerCase()}`;
       const { resource: existing } = await playersContainer.item(playerId, "player").read();
       if (existing) {
+        // Update displayName/teamName if changed (user re-joined with different info)
+        let updated = false;
+        if (existing.displayName !== displayName) {
+          existing.displayName = displayName;
+          updated = true;
+        }
+        if ((teamName || "") !== existing.teamName) {
+          existing.teamName = teamName || "";
+          updated = true;
+        }
+        if (updated) {
+          await playersContainer.item(playerId, "player").replace(existing);
+        }
+
         return {
           status: 200,
           jsonBody: {
