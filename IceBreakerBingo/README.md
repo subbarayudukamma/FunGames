@@ -211,11 +211,12 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ **Raffle logging** — all draws timestamped and included in JSON export
 - ✅ Admin dashboard with leaderboard
 - ✅ **Team name** — players enter their team on join, visible in admin lobby
-- ✅ **Answer autocomplete** — suggests participant names from roster as you type (with team info), also allows free-text entry
+- ✅ **Roster-only answers** — players can only select from registered participants (no free-text); multiple people can be selected per question as tags/chips
+- ✅ **Structured connections export** — export includes a `connections` array mapping every player pair with the question that connected them (for follow-up emails)
 - ✅ **Question import** — import from .txt file or paste (one question per line, auto-saves immediately). "Clear All" button to remove all questions.
 - ✅ **Answer verification** — admin can expand win queue items to view the player's answers for the winning line before claiming
 - ✅ **View submitted answers** — players can tap completed cells to see what they entered
-- ✅ **Post-game export** — admin can export all player answers + raffle results as structured JSON
+- ✅ **Post-game export** — admin can export all player answers + raffle results + connections as structured JSON
 - ✅ Generate 30 random placeholder questions with one click
 - ✅ Game reset automatically returns all players to the landing page
 - ✅ Mobile-responsive design

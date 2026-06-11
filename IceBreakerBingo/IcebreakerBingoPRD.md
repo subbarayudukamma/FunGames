@@ -50,7 +50,7 @@ The app supports two game modes:
 - Enters Microsoft alias + display name + team name → joins lobby
 - Waits until admin releases the game
 - Sees personalized 5×5 bingo card (randomized layout)
-- Taps a cell → modal with full question + autocomplete text input (suggests names from participant roster as they type; can also enter any free-text name)
+- Taps a cell → modal with full question + search input that filters the participant roster (only registered players can be selected, no free-text). Multiple people can be selected as tags/chips with 'x' to remove.
 - Can see own progress (completed cells highlighted in green)
 - Polls every 5s for game state changes (+ manual refresh button)
 - Completing a line (row/col/diagonal/first5/blackout) automatically notifies the admin for verification
@@ -167,8 +167,8 @@ The app supports two game modes:
   "teamName": "Azure Compute",
   "card": [
     { "position": 0, "questionId": "q14", "answer": null, "completedAt": null },
-    { "position": 1, "questionId": "q3", "answer": "John Smith", "completedAt": "ISO" }
-    // ... 25 cells
+    { "position": 1, "questionId": "q3", "answer": [{"alias": "jsmith", "displayName": "John Smith", "teamName": "Azure Compute"}], "completedAt": "ISO" }
+    // ... 25 cells (answer is an array of player objects or null)
   ],
   "joinedAt": "ISO timestamp",
   "completedCount": 5,
@@ -220,8 +220,8 @@ The app supports two game modes:
 ### 8.2 `/play` — Bingo Card
 - 5×5 grid, mobile-responsive
 - Each cell shows question text (truncated, tap to expand)
-- Tap unanswered cell → modal with full question + autocomplete text input (suggests participant names/teams from roster; allows free-text entry) + Submit button
-- Tap completed cell → modal showing the submitted answer (view-only)
+- Tap unanswered cell → modal with full question + roster search input (only registered players can be selected). Players appear as tags/chips; multiple selections allowed. Each tag has 'x' to remove.
+- Tap completed cell → modal showing the selected people as tags (view-only)
 - Completed cells turn green with checkmark
 - Progress bar showing X/25 completed
 - Refresh button + auto-poll every 5s for game state

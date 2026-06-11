@@ -16,12 +16,29 @@ app.http("submitAnswer", {
         return { status: 400, jsonBody: { error: "alias, questionId, and answer are required" } };
       }
 
+      // Answer must be an array of player objects
+      if (!Array.isArray(answer) || answer.length === 0) {
+        return { status: 400, jsonBody: { error: "answer must be a non-empty array of selected players" } };
+      }
+
       const { playersContainer, gameContainer } = await ensureInitialized();
 
       // Verify game is active
       const { resource: config } = await gameContainer.item("config", "game").read();
       if (!config || config.gameState !== "active") {
         return { status: 400, jsonBody: { error: "Game is not active" } };
+      }
+
+      // Validate that all selected people are in the roster
+      const { resources: allPlayers } = await playersContainer.items
+        .query("SELECT c.alias, c.displayName, c.teamName FROM c WHERE c.partitionKey = 'player'")
+        .fetchAll();
+      const validAliases = new Set(allPlayers.map(p => p.alias));
+
+      for (const person of answer) {
+        if (!person.alias || !validAliases.has(person.alias)) {
+          return { status: 400, jsonBody: { error: `Invalid player: ${person.alias || person.displayName || 'unknown'}. Please select from the roster.` } };
+        }
       }
 
       const playerId = `player-${alias.toLowerCase()}`;

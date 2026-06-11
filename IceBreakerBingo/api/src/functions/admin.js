@@ -438,7 +438,7 @@ app.http("adminExport", {
         .query("SELECT c.alias, c.displayName, c.teamName, c.card, c.completedCount, c.joinedAt FROM c WHERE c.partitionKey = 'player'")
         .fetchAll();
 
-      // Build export: each player gets their answers with question text + who they wrote
+      // Build export: each player gets their answers with question text + structured connections
       const exportData = players.map(p => ({
         alias: p.alias,
         displayName: p.displayName,
@@ -454,7 +454,24 @@ app.http("adminExport", {
           })),
       }));
 
-      return { status: 200, jsonBody: { players: exportData, gameMode: config.gameMode || 'classic', raffleResults: config.raffleResults || [], exportedAt: new Date().toISOString() } };
+      // Build connections map: for each pair of connected players, record the question that connects them
+      const connections = [];
+      for (const player of exportData) {
+        for (const ans of player.answers) {
+          if (Array.isArray(ans.answer)) {
+            for (const person of ans.answer) {
+              connections.push({
+                player1: { alias: player.alias, displayName: player.displayName, teamName: player.teamName },
+                player2: { alias: person.alias, displayName: person.displayName, teamName: person.teamName || '' },
+                question: ans.question,
+                completedAt: ans.completedAt,
+              });
+            }
+          }
+        }
+      }
+
+      return { status: 200, jsonBody: { players: exportData, connections, gameMode: config.gameMode || 'classic', raffleResults: config.raffleResults || [], exportedAt: new Date().toISOString() } };
     } catch (error) {
       context.log("Error in adminExport:", error);
       return { status: 500, jsonBody: { error: "Internal server error" } };

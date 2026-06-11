@@ -10,7 +10,8 @@ export default function Play() {
   const [card, setCard] = useState([]);
   const [playerData, setPlayerData] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
-  const [answer, setAnswer] = useState('');
+  const [selectedPeople, setSelectedPeople] = useState([]);
+  const [searchText, setSearchText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [gameState, setGameState] = useState('active');
@@ -58,12 +59,15 @@ export default function Play() {
   }, []);
 
   const handleAnswerChange = (value) => {
-    setAnswer(value);
+    setSearchText(value);
     if (value.trim().length > 0) {
       const lower = value.toLowerCase();
+      const alreadySelected = new Set(selectedPeople.map(p => p.alias));
       const matches = roster.filter(r =>
-        r.displayName.toLowerCase().includes(lower) ||
-        (r.teamName && r.teamName.toLowerCase().includes(lower))
+        !alreadySelected.has(r.alias) &&
+        r.alias !== alias &&
+        (r.displayName.toLowerCase().includes(lower) ||
+        (r.teamName && r.teamName.toLowerCase().includes(lower)))
       ).slice(0, 8);
       setSuggestions(matches);
       setShowSuggestions(matches.length > 0);
@@ -73,24 +77,31 @@ export default function Play() {
     }
   };
 
-  const selectSuggestion = (name) => {
-    setAnswer(name);
+  const selectSuggestion = (person) => {
+    setSelectedPeople([...selectedPeople, person]);
+    setSearchText('');
     setSuggestions([]);
     setShowSuggestions(false);
   };
 
+  const removePerson = (aliasToRemove) => {
+    setSelectedPeople(selectedPeople.filter(p => p.alias !== aliasToRemove));
+  };
+
   const handleSubmitAnswer = async () => {
-    if (!answer.trim()) return;
+    if (selectedPeople.length === 0) return;
     setSubmitting(true);
     setError('');
 
     try {
-      const result = await submitAnswer(alias, selectedCell.questionId, answer.trim());
+      const answerData = selectedPeople.map(p => ({ alias: p.alias, displayName: p.displayName, teamName: p.teamName }));
+      const result = await submitAnswer(alias, selectedCell.questionId, answerData);
       if (result.error) {
         setError(result.error);
       } else {
         setSelectedCell(null);
-        setAnswer('');
+        setSelectedPeople([]);
+        setSearchText('');
         fetchCard();
       }
     } catch (e) {
@@ -241,7 +252,8 @@ export default function Play() {
               onClick={() => {
                 if (!isCompleted && !isFree) {
                   setSelectedCell(cell);
-                  setAnswer('');
+                  setSelectedPeople([]);
+                  setSearchText('');
                   setError('');
                 } else if (isCompleted && !isFree) {
                   setSelectedCell({ ...cell, viewOnly: true });
@@ -263,9 +275,24 @@ export default function Play() {
               <>
                 <h3>✅ Your Answer</h3>
                 <p style={{ fontSize: '1rem', color: 'var(--text)' }}>{selectedCell.questionText}</p>
-                <p style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                  {selectedCell.answer}
-                </p>
+                <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  {(() => {
+                    const ans = selectedCell.answer;
+                    if (Array.isArray(ans)) {
+                      return (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {ans.map((p, i) => (
+                            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', padding: '0.3rem 0.6rem', background: '#dbeafe', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 500 }}>
+                              {p.displayName || p}
+                              {p.teamName && <span style={{ marginLeft: '0.3rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>({p.teamName})</span>}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>{ans}</p>;
+                  })()}
+                </div>
                 <div className="modal-actions">
                   <button className="btn" style={{ background: 'var(--border)' }} onClick={() => setSelectedCell(null)}>
                     Close
@@ -276,22 +303,43 @@ export default function Play() {
               <>
                 <h3>📝 Answer This Question</h3>
                 <p style={{ fontSize: '1rem', color: 'var(--text)' }}>{selectedCell.questionText}</p>
+
+                {/* Selected people tags */}
+                {selectedPeople.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem', marginTop: '0.5rem' }}>
+                    {selectedPeople.map((p) => (
+                      <span key={p.alias} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                        padding: '0.3rem 0.6rem', background: '#dbeafe', borderRadius: '9999px',
+                        fontSize: '0.85rem', fontWeight: 500, border: '1px solid #93c5fd',
+                      }}>
+                        {p.displayName}
+                        {p.teamName && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({p.teamName})</span>}
+                        <button
+                          onClick={() => removePerson(p.alias)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: '0.9rem', padding: '0 0.15rem', lineHeight: 1 }}
+                          title="Remove"
+                        >×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{ position: 'relative' }}>
                   <input
                     className="input"
                     type="text"
-                    placeholder="Start typing a name..."
-                    value={answer}
+                    placeholder="Search for a person..."
+                    value={searchText}
                     onChange={(e) => handleAnswerChange(e.target.value)}
                     autoFocus
-                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitAnswer()}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    onFocus={() => answer.trim() && suggestions.length > 0 && setShowSuggestions(true)}
+                    onFocus={() => searchText.trim() && suggestions.length > 0 && setShowSuggestions(true)}
                   />
                   {showSuggestions && (
                     <ul className="autocomplete-list">
                       {suggestions.map((s, i) => (
-                        <li key={i} onMouseDown={() => selectSuggestion(s.displayName)}>
+                        <li key={i} onMouseDown={() => selectSuggestion(s)}>
                           <strong>{s.displayName}</strong>
                           {s.teamName && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>({s.teamName})</span>}
                         </li>
@@ -303,10 +351,10 @@ export default function Play() {
                   <p style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{error}</p>
                 )}
                 <div className="modal-actions">
-                  <button className="btn btn-primary" onClick={handleSubmitAnswer} disabled={submitting || !answer.trim()}>
-                    {submitting ? 'Submitting...' : '✅ Submit'}
+                  <button className="btn btn-primary" onClick={handleSubmitAnswer} disabled={submitting || selectedPeople.length === 0}>
+                    {submitting ? 'Submitting...' : `✅ Submit (${selectedPeople.length})`}
                   </button>
-                  <button className="btn" style={{ background: 'var(--border)' }} onClick={() => setSelectedCell(null)}>
+                  <button className="btn" style={{ background: 'var(--border)' }} onClick={() => { setSelectedCell(null); setSelectedPeople([]); setSearchText(''); }}>
                     Cancel
                   </button>
                 </div>
