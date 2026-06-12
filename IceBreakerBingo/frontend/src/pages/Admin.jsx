@@ -32,7 +32,7 @@ export default function Admin() {
   const [playerCount, setPlayerCount] = useState(0);
   const [claimedWins, setClaimedWins] = useState({});
   const [winQueue, setWinQueue] = useState([]);
-  const [gameMode, setGameMode] = useState('classic');
+  const [gameMode, setGameMode] = useState('raffle');
   const [raffleResults, setRaffleResults] = useState([]);
   const [lastDrawn, setLastDrawn] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,7 @@ export default function Admin() {
       setGameState(state.gameState);
       setPlayerCount(state.playerCount);
       setClaimedWins(state.claimedWins || {});
-      setGameMode(state.gameMode || 'classic');
+      setGameMode(state.gameMode || 'raffle');
       setRaffleResults(state.raffleResults || []);
 
       if (activeTab === 'lobby') {

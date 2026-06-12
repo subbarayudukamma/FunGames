@@ -142,7 +142,7 @@ app.http("adminReset", {
       // Reset game state
       const { resource: config } = await gameContainer.item("config", "game").read();
       config.gameState = "lobby";
-      config.gameMode = "classic";
+      config.gameMode = "raffle";
       config.claimedWins = {};
       config.winQueue = [];
       config.raffleResults = [];
@@ -471,7 +471,7 @@ app.http("adminExport", {
         }
       }
 
-      return { status: 200, jsonBody: { players: exportData, connections, gameMode: config.gameMode || 'classic', raffleResults: config.raffleResults || [], exportedAt: new Date().toISOString() } };
+      return { status: 200, jsonBody: { players: exportData, connections, gameMode: config.gameMode || 'raffle', raffleResults: config.raffleResults || [], exportedAt: new Date().toISOString() } };
     } catch (error) {
       context.log("Error in adminExport:", error);
       return { status: 500, jsonBody: { error: "Internal server error" } };
