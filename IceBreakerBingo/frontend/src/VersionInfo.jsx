@@ -44,7 +44,7 @@ export default function VersionInfo() {
             </p>
             <hr style={{ margin: '0.75rem 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
             <p style={{ fontSize: '0.8rem', color: '#9ca3af', margin: '0.25rem 0' }}>
-              © 2026 Subbarayudu Kamma
+              © 2026 Subba Kamma
             </p>
             <p style={{ fontSize: '0.75rem', color: '#9ca3af', margin: '0.25rem 0' }}>
               Built for team icebreaker events
