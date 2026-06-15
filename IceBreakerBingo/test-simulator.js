@@ -27,16 +27,19 @@ function withPlayroom(url) {
 async function api(method, path, body) {
   const url = withPlayroom(`${API_BASE}${path}`);
   const opts = { method, headers: {} };
-  if (body) {
+  if (method === 'POST') {
     opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
+    opts.body = JSON.stringify(body || {});
   }
+  if (process.env.DEBUG) console.log(`  [DEBUG] ${method} ${url}`);
   const res = await fetch(url, opts);
-  if (!res.ok && res.status !== 400 && res.status !== 401) {
-    const text = await res.text();
+  if (process.env.DEBUG) console.log(`  [DEBUG] → ${res.status} ${res.statusText}`);
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
     throw new Error(`HTTP ${res.status} on ${method} ${path}: ${text.slice(0, 200)}`);
   }
-  return res.json();
 }
 
 async function adminApi(method, path, body) {
