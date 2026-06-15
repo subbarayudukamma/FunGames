@@ -161,3 +161,12 @@ export async function adminResetRaffle(key) {
   });
   return res.json();
 }
+
+export async function adminAddRaffleEntries(key, entries, players) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/add-raffle-entries?key=${encodeURIComponent(key)}`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entries, players }),
+  });
+  return res.json();
+}

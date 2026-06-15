@@ -61,7 +61,7 @@ The app supports two game modes:
   - This helps players focus on unclaimed lines
 
 ### 4.2 Admin
-- Navigates to `/admin?key=<shared-secret>`
+- Navigates to `/admin` — if no `key` parameter is provided, a login form prompts for the admin key
 - **Before game**: Selects game mode — **Classic Bingo** (rows/cols/diagonals win) or **Raffle Bingo** (each box = 1 raffle entry). Mode cannot be changed after releasing cards.
 - **Before game**: Manages bingo questions (add/edit/delete, need 25+ questions). Can generate 30 random placeholder questions with one click. Can import questions from a .txt file or by pasting them (one per line).
 - **Before game**: Sees player count in lobby (who's registered and ready)
@@ -76,9 +76,10 @@ The app supports two game modes:
 - **During game (Classic mode)**: Receives real-time **notification queue** when players complete a line. Multiple players queue up per category. Admin verifies each one physically, then either:
   - **Claims** → officially awards that specific line (row-1, col-3, diag-2, etc.). All players see a red rectangle on that line on their card.
   - **Dismisses** → removes from queue without claiming (failed verification).
-- **During game (Raffle mode)**: Sees leaderboard of completion counts. No win queue needed — players simply accumulate entries.
+- **During game (Raffle mode)**: Sees leaderboard of completion counts with entry breakdown (bingo entries, extra entries, total). No win queue needed — players simply accumulate entries.
+- **During game (Raffle mode)**: Can add **extra raffle entries** for specific players — set a count, search/select multiple players, and submit to award bonus entries (e.g., for participation prizes, challenges, etc.)
 - **Closing game (Raffle mode)**: Admin clicks "Close Game" to stop submissions, then draws winners one at a time:
-  - Each player's completed box count = their number of raffle entries (weighted random)
+  - Each player's total entries = bingo completed boxes + extra entries awarded by admin (weighted random)
   - Free space = 1 entry minimum for everyone who joined
   - Winners are removed from the pool after being drawn (can only win once)
   - All draws are logged with timestamp and entry counts
@@ -173,6 +174,7 @@ The app supports two game modes:
   ],
   "joinedAt": "ISO timestamp",
   "completedCount": 5,
+  "extraRaffleEntries": 3,
   "hasRow": false,
   "hasColumn": false,
   "hasDiagonal": false,
@@ -207,6 +209,7 @@ The app supports two game modes:
 | POST | `/api/game-admin/claim-win?key={key}` | Admin: verify & claim `{category, winner}` (classic mode) |
 | POST | `/api/game-admin/unclaim-win?key={key}` | Admin: unclaim a win `{category}` |
 | POST | `/api/game-admin/dismiss-queue-item?key={key}` | Admin: dismiss queue item `{category, player}` |
+| POST | `/api/game-admin/add-raffle-entries?key={key}` | Admin: add extra raffle entries `{entries: number, players: [aliases]}` |
 | GET | `/api/game-admin/export?key={key}` | Admin: export all player answers + raffle results |
 
 ---

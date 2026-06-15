@@ -16,12 +16,14 @@ import {
   adminCloseGame,
   adminDrawRaffle,
   adminResetRaffle,
+  adminAddRaffleEntries,
   getGameState,
 } from '../api';
 
 export default function Admin() {
-  const [searchParams] = useSearchParams();
-  const adminKey = searchParams.get('key') || '';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [adminKey, setAdminKey] = useState(searchParams.get('key') || '');
+  const [keyInput, setKeyInput] = useState('');
   const [activeTab, setActiveTab] = useState('lobby');
   const [players, setPlayers] = useState([]);
   const [dashboard, setDashboard] = useState(null);
@@ -37,6 +39,9 @@ export default function Admin() {
   const [lastDrawn, setLastDrawn] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [extraEntryCount, setExtraEntryCount] = useState(1);
+  const [extraEntryPlayers, setExtraEntryPlayers] = useState([]);
+  const [extraEntrySearch, setExtraEntrySearch] = useState('');
 
   const fetchData = useCallback(async () => {
     if (!adminKey) return;
@@ -57,6 +62,12 @@ export default function Admin() {
       } else if (activeTab === 'questions') {
         const data = await adminGetQuestions(adminKey);
         if (data.questions) setQuestions(data.questions);
+      }
+
+      // Always fetch players for extra raffle entries dropdown
+      if (activeTab !== 'lobby' && state.gameMode === 'raffle' && (state.gameState === 'active' || state.gameState === 'closed')) {
+        const data = await adminGetPlayers(adminKey);
+        if (data.players) setPlayers(data.players);
       }
 
       // Always fetch win queue when game is active
@@ -134,6 +145,20 @@ export default function Admin() {
     fetchData();
   };
 
+  const handleAddExtraEntries = async () => {
+    if (extraEntryPlayers.length === 0) {
+      setMessage('Select at least one player to add entries');
+      return;
+    }
+    setLoading(true);
+    const result = await adminAddRaffleEntries(adminKey, extraEntryCount, extraEntryPlayers.map(p => p.alias));
+    setMessage(result.message || result.error);
+    setExtraEntryPlayers([]);
+    setExtraEntrySearch('');
+    setLoading(false);
+    fetchData();
+  };
+
   const handleAddQuestion = () => {
     if (!newQuestion.trim()) return;
     setQuestions([...questions, { id: `q${questions.length + 1}`, text: newQuestion.trim() }]);
@@ -183,13 +208,37 @@ export default function Admin() {
     return cat;
   };
 
+  const handleKeySubmit = (e) => {
+    e.preventDefault();
+    if (!keyInput.trim()) return;
+    const newKey = keyInput.trim();
+    setAdminKey(newKey);
+    setSearchParams((prev) => {
+      prev.set('key', newKey);
+      return prev;
+    });
+  };
+
   if (!adminKey) {
     return (
       <div className="container">
         <div className="header">
           <h1>🔐 Admin Access Required</h1>
-          <p>Please add <code>?key=your-admin-key</code> to the URL</p>
+          <p>Enter your admin key to continue</p>
         </div>
+        <form onSubmit={handleKeySubmit} style={{ maxWidth: '400px', margin: '1.5rem auto' }}>
+          <input
+            className="input"
+            type="password"
+            placeholder="Enter admin key..."
+            value={keyInput}
+            onChange={(e) => setKeyInput(e.target.value)}
+            autoFocus
+          />
+          <button className="btn btn-primary" type="submit" style={{ marginTop: '0.5rem' }}>
+            🔓 Access Admin Panel
+          </button>
+        </form>
       </div>
     );
   }
@@ -464,6 +513,105 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Extra Raffle Entries - visible when raffle mode and game is active or closed */}
+      {gameMode === 'raffle' && (gameState === 'active' || gameState === 'closed') && (
+        <div className="card">
+          <h2>🎁 Add Extra Raffle Entries</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+            Award bonus raffle entries to specific players (e.g., for participation prizes, challenges, etc.)
+          </p>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, whiteSpace: 'nowrap' }}>Entries to add:</label>
+            <input
+              className="input"
+              type="number"
+              min="1"
+              max="100"
+              value={extraEntryCount}
+              onChange={(e) => setExtraEntryCount(Math.max(1, parseInt(e.target.value) || 1))}
+              style={{ width: '80px', marginBottom: 0 }}
+            />
+          </div>
+
+          {/* Player search / selection */}
+          <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+            <input
+              className="input"
+              style={{ marginBottom: 0 }}
+              placeholder="Search players by name or alias..."
+              value={extraEntrySearch}
+              onChange={(e) => setExtraEntrySearch(e.target.value)}
+            />
+            {extraEntrySearch.trim() && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                background: 'white', border: '1px solid var(--border)', borderRadius: '8px',
+                maxHeight: '200px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}>
+                {players
+                  .filter(p =>
+                    !extraEntryPlayers.find(ep => ep.alias === p.alias) &&
+                    (p.displayName.toLowerCase().includes(extraEntrySearch.toLowerCase()) ||
+                     p.alias.toLowerCase().includes(extraEntrySearch.toLowerCase()))
+                  )
+                  .map(p => (
+                    <div
+                      key={p.alias}
+                      style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6' }}
+                      onClick={() => {
+                        setExtraEntryPlayers([...extraEntryPlayers, p]);
+                        setExtraEntrySearch('');
+                      }}
+                    >
+                      <strong>{p.displayName}</strong> <span style={{ color: 'var(--text-muted)' }}>@{p.alias}</span>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+          </div>
+
+          {/* Selected players as chips */}
+          {extraEntryPlayers.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+              {extraEntryPlayers.map(p => (
+                <span key={p.alias} style={{
+                  background: '#e0f2fe', border: '1px solid #7dd3fc', borderRadius: '16px',
+                  padding: '0.25rem 0.6rem', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                }}>
+                  {p.displayName}
+                  <button
+                    onClick={() => setExtraEntryPlayers(extraEntryPlayers.filter(ep => ep.alias !== p.alias))}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0369a1', fontWeight: 700, fontSize: '0.85rem' }}
+                  >×</button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="btn btn-primary"
+              style={{ width: 'auto' }}
+              onClick={handleAddExtraEntries}
+              disabled={loading || extraEntryPlayers.length === 0}
+            >
+              ➕ Add {extraEntryCount} {extraEntryCount === 1 ? 'Entry' : 'Entries'} to {extraEntryPlayers.length} {extraEntryPlayers.length === 1 ? 'Player' : 'Players'}
+            </button>
+            {extraEntryPlayers.length > 0 && (
+              <button
+                className="btn"
+                style={{ width: 'auto', background: 'var(--border)' }}
+                onClick={() => { setExtraEntryPlayers([]); setExtraEntrySearch(''); }}
+              >
+                Clear Selection
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="tabs">
         {['lobby', 'questions', 'leaderboard'].map((tab) => (
@@ -660,6 +808,9 @@ export default function Admin() {
                   <th>#</th>
                   <th>Player</th>
                   <th>Done</th>
+                  {gameMode === 'raffle' && <th>Bingo Entries</th>}
+                  {gameMode === 'raffle' && <th>Extra</th>}
+                  {gameMode === 'raffle' && <th>Total Entries</th>}
                   <th>Row</th>
                   <th>Col</th>
                   <th>Diag</th>
@@ -672,6 +823,9 @@ export default function Admin() {
                     <td>{i + 1}</td>
                     <td><strong>{p.displayName}</strong><br/><small>{p.alias}</small></td>
                     <td>{p.completedCount}/25</td>
+                    {gameMode === 'raffle' && <td>{p.completedCount || 1}</td>}
+                    {gameMode === 'raffle' && <td>{p.extraRaffleEntries || 0}</td>}
+                    {gameMode === 'raffle' && <td><strong>{(p.completedCount || 1) + (p.extraRaffleEntries || 0)}</strong></td>}
                     <td>{p.hasRow ? <span className="badge badge-success">✓</span> : '—'}</td>
                     <td>{p.hasColumn ? <span className="badge badge-success">✓</span> : '—'}</td>
                     <td>{p.hasDiagonal ? <span className="badge badge-success">✓</span> : '—'}</td>

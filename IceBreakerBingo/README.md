@@ -86,6 +86,28 @@ Cruise2026/
    - Player: http://localhost:5173
    - Admin: http://localhost:5173/admin?key=bingo-admin-2026
 
+## Testing
+
+A test simulator script is included to test the app without real users. It simulates 50+ players joining, submitting answers, and tests admin features including extra raffle entries.
+
+```bash
+# Against local dev server (start API with `cd api && func start` first)
+node test-simulator.js http://localhost:7071/api "" bingo-admin-2026 50
+
+# Against Azure (with playroom key)
+node test-simulator.js https://sk-icebreaker-bingo-api.azurewebsites.net/api YOUR_PLAYROOM_KEY YOUR_ADMIN_KEY 100
+```
+
+The simulator:
+1. Resets the game
+2. Sets raffle mode and loads 30 questions
+3. Joins N fake players with random names/teams
+4. Releases bingo cards
+5. Simulates random answer submissions (3-20 per player)
+6. Adds extra raffle entries to top players
+7. Verifies leaderboard shows entry breakdown
+8. Closes game and draws 5 raffle winners
+
 ## Deployment to Azure
 
 This app uses a **split deployment architecture**:
@@ -208,6 +230,8 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ **Admin verification flow** — verify in person, then claim or dismiss (classic mode)
 - ✅ Claimed lines shown with red rectangle + dimmed on all players' cards
 - ✅ **Raffle mode** — each box = 1 entry; weighted random draw; winners removed from pool
+- ✅ **Extra raffle entries** — admin can award bonus entries to specific players during the game
+- ✅ **Raffle leaderboard** — shows bingo entries, extra entries, and total entries per player
 - ✅ **Raffle logging** — all draws timestamped and included in JSON export
 - ✅ Admin dashboard with leaderboard
 - ✅ **Team name** — players enter their team on join, visible in admin lobby
@@ -224,3 +248,4 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ Mobile-responsive design
 - ✅ No answer changes after submission
 - ✅ **Playroom key** — mandatory query parameter prevents unauthorized access / DDoS; key configured in Azure, not in source
+- ✅ **Admin key prompt** — navigating to `/admin` without a key shows a login form instead of requiring URL manipulation

@@ -49,7 +49,7 @@ app.http("adminDashboard", {
     try {
       const { playersContainer } = await ensureInitialized();
       const { resources: players } = await playersContainer.items
-        .query("SELECT c.alias, c.displayName, c.completedCount, c.hasRow, c.hasColumn, c.hasDiagonal, c.hasBlackout, c.card, c.completedRows, c.completedColumns, c.completedDiagonals FROM c WHERE c.partitionKey = 'player' ORDER BY c.completedCount DESC")
+        .query("SELECT c.alias, c.displayName, c.completedCount, c.hasRow, c.hasColumn, c.hasDiagonal, c.hasBlackout, c.card, c.completedRows, c.completedColumns, c.completedDiagonals, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player' ORDER BY c.completedCount DESC")
         .fetchAll();
 
       const stats = {
@@ -70,6 +70,7 @@ app.http("adminDashboard", {
           completedRows: p.completedRows || [],
           completedColumns: p.completedColumns || [],
           completedDiagonals: p.completedDiagonals || [],
+          extraRaffleEntries: p.extraRaffleEntries || 0,
           card: p.card,
         })),
       };
@@ -569,7 +570,7 @@ app.http("adminDrawRaffle", {
 
       // Get all players
       const { resources: players } = await playersContainer.items
-        .query("SELECT c.alias, c.displayName, c.teamName, c.completedCount FROM c WHERE c.partitionKey = 'player'")
+        .query("SELECT c.alias, c.displayName, c.teamName, c.completedCount, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player'")
         .fetchAll();
 
       // Exclude previous winners
@@ -580,11 +581,13 @@ app.http("adminDrawRaffle", {
         return { status: 400, jsonBody: { error: "No eligible players remaining in the pool" } };
       }
 
-      // Build weighted pool
+      // Build weighted pool (bingo entries + extra entries)
       const pool = [];
       for (const player of eligiblePlayers) {
-        const entries = player.completedCount || 1;
-        for (let i = 0; i < entries; i++) {
+        const bingoEntries = player.completedCount || 1;
+        const extraEntries = player.extraRaffleEntries || 0;
+        const totalEntries = bingoEntries + extraEntries;
+        for (let i = 0; i < totalEntries; i++) {
           pool.push(player);
         }
       }
@@ -597,7 +600,7 @@ app.http("adminDrawRaffle", {
         winner: winner.alias,
         displayName: winner.displayName,
         teamName: winner.teamName || '',
-        entries: winner.completedCount || 1,
+        entries: (winner.completedCount || 1) + (winner.extraRaffleEntries || 0),
         totalPoolEntries: pool.length,
         drawnAt: new Date().toISOString(),
         drawNumber: config.raffleResults.length + 1,
@@ -642,6 +645,54 @@ app.http("adminResetRaffle", {
       return { status: 200, jsonBody: { message: "Raffle results cleared", raffleResults: [] } };
     } catch (error) {
       context.log("Error in adminResetRaffle:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
+// POST /api/game-admin/add-raffle-entries
+// Admin adds extra raffle entries for specific players
+app.http("adminAddRaffleEntries", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "game-admin/add-raffle-entries",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const { entries, players } = await request.json();
+
+      if (!entries || typeof entries !== 'number' || entries < 1) {
+        return { status: 400, jsonBody: { error: "entries must be a positive number" } };
+      }
+      if (!Array.isArray(players) || players.length === 0) {
+        return { status: 400, jsonBody: { error: "players must be a non-empty array of aliases" } };
+      }
+
+      const { playersContainer } = await ensureInitialized();
+
+      const updated = [];
+      for (const alias of players) {
+        try {
+          const playerId = `player-${alias}`;
+          const { resource: player } = await playersContainer.item(playerId, "player").read();
+          if (!player) continue;
+
+          player.extraRaffleEntries = (player.extraRaffleEntries || 0) + entries;
+          await playersContainer.item(playerId, "player").replace(player);
+          updated.push({ alias, displayName: player.displayName, extraRaffleEntries: player.extraRaffleEntries });
+        } catch (e) {
+          if (e.code === 404) continue;
+          throw e;
+        }
+      }
+
+      return { status: 200, jsonBody: { message: `Added ${entries} extra raffle entries to ${updated.length} players`, updated } };
+    } catch (error) {
+      context.log("Error in adminAddRaffleEntries:", error);
       return { status: 500, jsonBody: { error: "Internal server error" } };
     }
   },
