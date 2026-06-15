@@ -31,11 +31,10 @@ async function api(method, path, body) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  const res = await fetch(url);
-  // For POST requests
-  if (method === 'POST') {
-    const postRes = await fetch(url, opts);
-    return postRes.json();
+  const res = await fetch(url, opts);
+  if (!res.ok && res.status !== 400 && res.status !== 401) {
+    const text = await res.text();
+    throw new Error(`HTTP ${res.status} on ${method} ${path}: ${text.slice(0, 200)}`);
   }
   return res.json();
 }
