@@ -321,6 +321,27 @@ export default function Admin() {
         >
           🔄 Reset Game
         </button>
+        <button
+          className="btn"
+          style={{ flex: 1, minWidth: '120px', background: '#6366f1', color: 'white' }}
+          onClick={async () => {
+            const data = await adminExport(adminKey);
+            if (data.error) { setMessage(data.error); return; }
+            const now = new Date();
+            const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `bingo-export_${ts}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            setMessage('Export downloaded!');
+          }}
+          disabled={loading}
+        >
+          📥 Export Game
+        </button>
       </div>
 
       {/* Win Notification Queue - visible when game is active AND classic mode */}
