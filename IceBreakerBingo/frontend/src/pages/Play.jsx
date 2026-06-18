@@ -51,12 +51,18 @@ export default function Play() {
     return () => clearInterval(interval);
   }, [fetchCard]);
 
-  // Fetch roster for autocomplete
-  useEffect(() => {
+  // Fetch roster for autocomplete (refresh periodically to pick up new players)
+  const fetchRoster = useCallback(() => {
     getRoster().then(data => {
       if (data.roster) setRoster(data.roster);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchRoster();
+    const interval = setInterval(fetchRoster, 15000);
+    return () => clearInterval(interval);
+  }, [fetchRoster]);
 
   const handleAnswerChange = (value) => {
     setSearchText(value);
@@ -351,13 +357,16 @@ export default function Play() {
                   <input
                     className="input"
                     type="text"
-                    placeholder="Search for a person..."
+                    placeholder="Search for a person by name or alias..."
                     value={searchText}
                     onChange={(e) => handleAnswerChange(e.target.value)}
                     autoFocus
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     onFocus={() => searchText.trim() && suggestions.length > 0 && setShowSuggestions(true)}
                   />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
+                    Don't see someone? They may not have joined yet. List refreshes automatically.
+                  </p>
                   {showSuggestions && (
                     <ul className="autocomplete-list">
                       {suggestions.map((s, i) => (

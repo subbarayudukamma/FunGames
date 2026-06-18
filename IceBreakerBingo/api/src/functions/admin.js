@@ -472,7 +472,20 @@ app.http("adminExport", {
         }
       }
 
-      return { status: 200, jsonBody: { players: exportData, connections, gameMode: config.gameMode || 'raffle', raffleResults: config.raffleResults || [], exportedAt: new Date().toISOString() } };
+      // Build raffle winners in draw order
+      const raffleWinners = (config.raffleResults || [])
+        .sort((a, b) => (a.drawNumber || 0) - (b.drawNumber || 0))
+        .map(r => ({
+          drawNumber: r.drawNumber,
+          alias: r.winner,
+          displayName: r.displayName,
+          teamName: r.teamName || '',
+          entries: r.entries,
+          totalPoolEntries: r.totalPoolEntries,
+          drawnAt: r.drawnAt,
+        }));
+
+      return { status: 200, jsonBody: { players: exportData, connections, gameMode: config.gameMode || 'raffle', raffleResults: config.raffleResults || [], raffleWinners, exportedAt: new Date().toISOString() } };
     } catch (error) {
       context.log("Error in adminExport:", error);
       return { status: 500, jsonBody: { error: "Internal server error" } };
