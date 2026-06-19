@@ -47,6 +47,11 @@ export default function PlayerEntry() {
           setDisplayName('');
           setTeamName('');
         }
+
+        // If game was closed/ended, clear joined state so player sees the waiting screen
+        if (data.gameState === 'closed' && joined) {
+          // Keep localStorage but show closed message
+        }
       } catch (e) {
         // API not available yet
       }
@@ -88,6 +93,27 @@ export default function PlayerEntry() {
     }
   };
 
+  // Show closed state - game is not accepting new players
+  if (gameState === 'closed') {
+    return (
+      <div className="container">
+        <div className="header">
+          <h1>🎯 Icebreaker Bingo</h1>
+          <p>Team bonding, one square at a time!</p>
+        </div>
+        <div className="card waiting">
+          <h2>🔒 Game is currently closed</h2>
+          <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>
+            The current round has ended. Please wait for the admin to start a new round.
+          </p>
+          <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            This page will automatically update when a new game begins.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (joined && gameState !== 'active') {
     return (
       <div className="container">
@@ -102,6 +128,9 @@ export default function PlayerEntry() {
           </p>
           <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             Joined as <strong>{displayName}</strong> ({alias})
+          </p>
+          <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+            You'll be taken to your bingo card automatically when the game starts.
           </p>
         </div>
       </div>

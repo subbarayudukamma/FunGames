@@ -24,6 +24,11 @@ app.http("join", {
         return { status: 500, jsonBody: { error: "Game not initialized. Visit admin page first." } };
       }
 
+      // Reject joins when game is closed
+      if (config.gameState === "closed") {
+        return { status: 400, jsonBody: { error: "Game is closed. Please wait for the next round to start.", gameState: "closed" } };
+      }
+
       // Check if player already exists
       const playerId = `player-${alias.toLowerCase()}`;
       const { resource: existing } = await playersContainer.item(playerId, "player").read();
