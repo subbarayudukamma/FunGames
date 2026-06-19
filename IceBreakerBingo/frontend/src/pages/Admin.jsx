@@ -17,6 +17,8 @@ import {
   adminDrawRaffle,
   adminResetRaffle,
   adminAddRaffleEntries,
+  adminClaimSession,
+  adminGetSession,
   getGameState,
 } from '../api';
 
@@ -24,6 +26,12 @@ export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [adminKey, setAdminKey] = useState(searchParams.get('key') || '');
   const [keyInput, setKeyInput] = useState('');
+  const [adminName, setAdminName] = useState('');
+  const [adminNameInput, setAdminNameInput] = useState('');
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const [isActiveAdmin, setIsActiveAdmin] = useState(false);
+  const [lockedOutBy, setLockedOutBy] = useState(null);
+  const [adminCount, setAdminCount] = useState(0);
   const [activeTab, setActiveTab] = useState('lobby');
   const [players, setPlayers] = useState([]);
   const [dashboard, setDashboard] = useState(null);
@@ -44,7 +52,24 @@ export default function Admin() {
   const [extraEntrySearch, setExtraEntrySearch] = useState('');
 
   const fetchData = useCallback(async () => {
-    if (!adminKey) return;
+    if (!adminKey || !adminName) return;
+
+    // Check session status
+    try {
+      const sessionData = await adminGetSession(adminKey, sessionId);
+      setAdminCount(sessionData.adminCount || 0);
+      if (sessionData.activeAdmin && sessionData.activeAdmin.sessionId !== sessionId) {
+        setIsActiveAdmin(false);
+        setLockedOutBy(sessionData.activeAdmin.name);
+        return; // Don't fetch other data if locked out
+      } else {
+        setIsActiveAdmin(true);
+        setLockedOutBy(null);
+      }
+    } catch (e) {
+      // continue
+    }
+
     try {
       const state = await getGameState();
       setGameState(state.gameState);
@@ -78,7 +103,7 @@ export default function Admin() {
     } catch (e) {
       // retry
     }
-  }, [adminKey, activeTab]);
+  }, [adminKey, adminName, activeTab, sessionId]);
 
   useEffect(() => {
     fetchData();
@@ -219,6 +244,24 @@ export default function Admin() {
     });
   };
 
+  const handleNameSubmit = async (e) => {
+    e.preventDefault();
+    if (!adminNameInput.trim()) return;
+    const name = adminNameInput.trim();
+    setAdminName(name);
+    // Claim session immediately
+    await adminClaimSession(adminKey, name, sessionId);
+    setIsActiveAdmin(true);
+    setLockedOutBy(null);
+  };
+
+  const handleReclaimSession = async () => {
+    await adminClaimSession(adminKey, adminName, sessionId);
+    setIsActiveAdmin(true);
+    setLockedOutBy(null);
+    fetchData();
+  };
+
   if (!adminKey) {
     return (
       <div className="container">
@@ -243,6 +286,62 @@ export default function Admin() {
     );
   }
 
+  if (!adminName) {
+    return (
+      <div className="container">
+        <div className="header">
+          <h1>🎯 Bingo Admin</h1>
+          <p>Enter your name to continue</p>
+        </div>
+        <form onSubmit={handleNameSubmit} style={{ maxWidth: '400px', margin: '1.5rem auto' }}>
+          <input
+            className="input"
+            type="text"
+            placeholder="Your name (e.g., Subba)"
+            value={adminNameInput}
+            onChange={(e) => setAdminNameInput(e.target.value)}
+            autoFocus
+          />
+          <button className="btn btn-primary" type="submit" style={{ marginTop: '0.5rem' }}>
+            ▶️ Start Admin Session
+          </button>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
+            Only one admin can be active at a time. Starting a session will take control from any other active admin.
+          </p>
+        </form>
+      </div>
+    );
+  }
+
+  if (lockedOutBy) {
+    return (
+      <div className="container">
+        <div className="header">
+          <h1>🎯 Bingo Admin</h1>
+        </div>
+        <div className="card" style={{ textAlign: 'center', background: '#fef2f2', border: '1px solid #fca5a5' }}>
+          <h2 style={{ color: '#dc2626' }}>⚠️ Session Taken Over</h2>
+          <p style={{ marginTop: '0.75rem', fontSize: '1rem' }}>
+            <strong>{lockedOutBy}</strong> is now the active admin.
+          </p>
+          <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            Auto-refresh has been stopped. You cannot make changes while another admin is active.
+          </p>
+          <button
+            className="btn btn-primary"
+            style={{ marginTop: '1rem', width: 'auto' }}
+            onClick={handleReclaimSession}
+          >
+            🔁 Take Back Control
+          </button>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+            This will notify the other admin that you've taken over.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container-wide">
       <div className="header">
@@ -253,6 +352,9 @@ export default function Admin() {
           Mode: <strong>{gameMode === 'raffle' ? '🎟️ Raffle' : '🏆 Classic'}</strong>
           {' | '}
           Players: <strong>{playerCount}</strong>
+          {' | '}
+          Admin: <strong>{adminName}</strong>
+          {adminCount > 1 && <span style={{ color: '#f59e0b' }}> ({adminCount} admins online)</span>}
         </p>
       </div>
 

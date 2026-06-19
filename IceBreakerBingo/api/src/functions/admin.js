@@ -710,3 +710,97 @@ app.http("adminAddRaffleEntries", {
     }
   },
 });
+
+// POST /api/game-admin/claim-session
+// Admin claims the active session (only one admin can be active at a time)
+app.http("adminClaimSession", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "game-admin/claim-session",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const { name, sessionId } = await request.json();
+
+      if (!name || !sessionId) {
+        return { status: 400, jsonBody: { error: "name and sessionId are required" } };
+      }
+
+      const { gameContainer } = await ensureInitialized();
+      const { resource: config } = await gameContainer.item("config", "game").read();
+
+      // Track all admin logins
+      if (!config.adminSessions) config.adminSessions = [];
+      // Remove existing entry for this sessionId
+      config.adminSessions = config.adminSessions.filter(s => s.sessionId !== sessionId);
+      config.adminSessions.push({ name, sessionId, lastSeen: new Date().toISOString() });
+      // Clean stale sessions (older than 2 minutes)
+      const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      config.adminSessions = config.adminSessions.filter(s => s.lastSeen > twoMinAgo);
+
+      // Set active admin
+      config.activeAdmin = { name, sessionId, claimedAt: new Date().toISOString() };
+      await gameContainer.item("config", "game").replace(config);
+
+      return {
+        status: 200,
+        jsonBody: {
+          message: `Admin session claimed by ${name}`,
+          activeAdmin: config.activeAdmin,
+          adminCount: config.adminSessions.length,
+        },
+      };
+    } catch (error) {
+      context.log("Error in adminClaimSession:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
+// GET /api/game-admin/session
+// Check current admin session status
+app.http("adminGetSession", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "game-admin/session",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const sessionId = request.query.get("sessionId");
+      const { gameContainer } = await ensureInitialized();
+      const { resource: config } = await gameContainer.item("config", "game").read();
+
+      // Update lastSeen for this session
+      if (sessionId && config.adminSessions) {
+        const session = config.adminSessions.find(s => s.sessionId === sessionId);
+        if (session) {
+          session.lastSeen = new Date().toISOString();
+          // Clean stale sessions
+          const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+          config.adminSessions = config.adminSessions.filter(s => s.lastSeen > twoMinAgo);
+          await gameContainer.item("config", "game").replace(config);
+        }
+      }
+
+      return {
+        status: 200,
+        jsonBody: {
+          activeAdmin: config.activeAdmin || null,
+          adminCount: (config.adminSessions || []).length,
+          isActive: config.activeAdmin?.sessionId === sessionId,
+        },
+      };
+    } catch (error) {
+      context.log("Error in adminGetSession:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});

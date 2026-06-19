@@ -170,3 +170,17 @@ export async function adminAddRaffleEntries(key, entries, players) {
   });
   return res.json();
 }
+
+export async function adminClaimSession(key, name, sessionId) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/claim-session?key=${encodeURIComponent(key)}`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, sessionId }),
+  });
+  return res.json();
+}
+
+export async function adminGetSession(key, sessionId) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/session?key=${encodeURIComponent(key)}&sessionId=${encodeURIComponent(sessionId)}`));
+  return res.json();
+}
