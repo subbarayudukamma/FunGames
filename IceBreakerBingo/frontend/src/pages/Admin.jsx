@@ -417,11 +417,11 @@ export default function Admin() {
         )}
         <button
           className="btn btn-danger"
-          style={{ flex: 1, minWidth: '120px' }}
+          style={{ flex: 0, minWidth: '80px', fontSize: '0.75rem', padding: '4px 10px' }}
           onClick={handleReset}
           disabled={loading}
         >
-          🔄 Reset Game
+          🔄 Reset
         </button>
         <button
           className="btn"
