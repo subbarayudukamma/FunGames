@@ -26,12 +26,18 @@ export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [adminKey, setAdminKey] = useState(searchParams.get('key') || '');
   const [keyInput, setKeyInput] = useState('');
-  const [adminName, setAdminName] = useState('');
+  const [adminName, setAdminName] = useState(() => sessionStorage.getItem('adminName') || '');
   const [adminNameInput, setAdminNameInput] = useState('');
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId] = useState(() => {
+    const stored = sessionStorage.getItem('adminSessionId');
+    if (stored) return stored;
+    const id = crypto.randomUUID();
+    sessionStorage.setItem('adminSessionId', id);
+    return id;
+  });
   const [isActiveAdmin, setIsActiveAdmin] = useState(false);
   const [lockedOutBy, setLockedOutBy] = useState(null);
-  const [adminCount, setAdminCount] = useState(0);
+  const [adminNames, setAdminNames] = useState([]);
   const [activeTab, setActiveTab] = useState('lobby');
   const [players, setPlayers] = useState([]);
   const [dashboard, setDashboard] = useState(null);
@@ -57,7 +63,7 @@ export default function Admin() {
     // Check session status
     try {
       const sessionData = await adminGetSession(adminKey, sessionId);
-      setAdminCount(sessionData.adminCount || 0);
+      setAdminNames(sessionData.adminNames || []);
       if (sessionData.activeAdmin && sessionData.activeAdmin.sessionId !== sessionId) {
         setIsActiveAdmin(false);
         setLockedOutBy(sessionData.activeAdmin.name);
@@ -110,6 +116,13 @@ export default function Admin() {
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  // Re-claim session on page load if name was previously set (e.g. refresh)
+  useEffect(() => {
+    if (adminKey && adminName) {
+      adminClaimSession(adminKey, adminName, sessionId);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRelease = async () => {
     if (!window.confirm('Release bingo cards to all players?')) return;
@@ -249,6 +262,7 @@ export default function Admin() {
     if (!adminNameInput.trim()) return;
     const name = adminNameInput.trim();
     setAdminName(name);
+    sessionStorage.setItem('adminName', name);
     // Claim session immediately
     await adminClaimSession(adminKey, name, sessionId);
     setIsActiveAdmin(true);
@@ -354,7 +368,7 @@ export default function Admin() {
           Players: <strong>{playerCount}</strong>
           {' | '}
           Admin: <strong>{adminName}</strong>
-          {adminCount > 1 && <span style={{ color: '#f59e0b' }}> ({adminCount} admins online)</span>}
+          {adminNames.length > 1 && <span style={{ color: '#f59e0b' }}> (Online: {adminNames.join(', ')})</span>}
         </p>
       </div>
 

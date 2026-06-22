@@ -752,6 +752,7 @@ app.http("adminClaimSession", {
           message: `Admin session claimed by ${name}`,
           activeAdmin: config.activeAdmin,
           adminCount: config.adminSessions.length,
+          adminNames: config.adminSessions.map(s => s.name),
         },
       };
     } catch (error) {
@@ -795,6 +796,7 @@ app.http("adminGetSession", {
         jsonBody: {
           activeAdmin: config.activeAdmin || null,
           adminCount: (config.adminSessions || []).length,
+          adminNames: (config.adminSessions || []).map(s => s.name),
           isActive: config.activeAdmin?.sessionId === sessionId,
         },
       };
