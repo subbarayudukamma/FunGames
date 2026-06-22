@@ -11,6 +11,7 @@ export default function PlayerEntry() {
   const [gameState, setGameState] = useState(null);
   const [playerCount, setPlayerCount] = useState(0);
   const [joined, setJoined] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const navigate = useNavigate();
 
   // Check if player already joined (from localStorage)
@@ -188,7 +189,59 @@ export default function PlayerEntry() {
           <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? 'Joining...' : '🎮 Join Game'}
           </button>
+
+          <button
+            type="button"
+            className="btn"
+            style={{ marginTop: '0.5rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)' }}
+            onClick={() => setShowRules(!showRules)}
+          >
+            {showRules ? '▲ Hide Rules' : '📋 How to Play & Prizes'}
+          </button>
         </form>
+
+        {showRules && (
+          <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#f0f9ff', borderRadius: '12px', border: '1px solid #bae6fd', textAlign: 'left' }}>
+            <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🎯 How It Works</h3>
+            <ul style={{ paddingLeft: '1.25rem', lineHeight: '1.7', fontSize: '0.9rem', margin: '0 0 1rem' }}>
+              <li>Each tile = a prompt that encourages you to interact with someone</li>
+              <li>Your answers are the <strong>people you meet and talk to</strong></li>
+              <li><strong>Twist:</strong> Your answers can't be from your own team — expand your people graph! 🙂</li>
+            </ul>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', fontStyle: 'italic' }}>
+              💡 Don't worry if you don't remember all the names you entered. We'll connect you with the people in your answers via email after the game.
+            </p>
+
+            <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🎁 Raffle & Prizes</h3>
+            <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>We'll wrap up with a raffle — <strong>10 winners</strong> in total!</p>
+
+            <p style={{ fontSize: '0.9rem', fontWeight: 500, marginBottom: '0.25rem' }}>How entries work:</p>
+            <ul style={{ paddingLeft: '1.25rem', lineHeight: '1.7', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+              <li>✅ Log into the app → <strong>1 raffle entry</strong></li>
+              <li>✅ Each bingo tile you complete → <strong>+1 entry</strong></li>
+              <li>✅ Form table groups by completing the puzzle from the entrance → <strong>bonus entries</strong></li>
+            </ul>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              The more people you connect with, the better your odds! 🎉
+            </p>
+
+            <p style={{ fontSize: '0.9rem', fontWeight: 500, marginBottom: '0.25rem' }}>What can be won?</p>
+            <ul style={{ paddingLeft: '1.25rem', lineHeight: '1.7', fontSize: '0.9rem', margin: '0' }}>
+              <li>🎁 6 Gift cards</li>
+              <li>🍽️ 4 opportunities for a 1:1 lunch with:</li>
+              <ul style={{ paddingLeft: '1.25rem', listStyle: 'none' }}>
+                <li>• Raja</li>
+                <li>• Tessa</li>
+                <li>• Alexei</li>
+                <li>• Kati</li>
+              </ul>
+            </ul>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+              🏆 Winners will be chosen in order of the draw.
+            </p>
+          </div>
+        )}
       </div>
 
       {playerCount > 0 && (
