@@ -214,8 +214,15 @@ export default function Play() {
             <h2>🎟️ Game Closed — Raffle Time!</h2>
             <p style={{ marginTop: '0.5rem' }}>
               You completed <strong>{playerData?.completedCount || 0}/25</strong> squares
-              = <strong>{playerData?.completedCount || 0}</strong> raffle entries!
             </p>
+            <p style={{ marginTop: '0.5rem', fontSize: '1.1rem' }}>
+              🎟️ Your total raffle entries: <strong style={{ color: 'var(--primary)' }}>{(playerData?.completedCount || 0) + (playerData?.extraRaffleEntries || 0)}</strong>
+            </p>
+            {(playerData?.extraRaffleEntries || 0) > 0 && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                ({playerData?.completedCount || 0} from bingo + {playerData?.extraRaffleEntries || 0} bonus)
+              </p>
+            )}
             <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
               Winners are being drawn now. Good luck! 🍀
             </p>
@@ -226,6 +233,8 @@ export default function Play() {
   }
 
   const completedCount = playerData?.completedCount || 0;
+  const extraRaffleEntries = playerData?.extraRaffleEntries || 0;
+  const totalEntries = completedCount + extraRaffleEntries;
 
   return (
     <div className="container">
@@ -247,6 +256,12 @@ export default function Play() {
         </div>
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${(completedCount / 25) * 100}%` }} />
+        </div>
+        <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+          <span>🎟️ Raffle entries: <strong style={{ color: 'var(--primary)' }}>{totalEntries}</strong></span>
+          <span style={{ fontSize: '0.75rem' }}>
+            ({completedCount} bingo{extraRaffleEntries > 0 && ` + ${extraRaffleEntries} bonus`})
+          </span>
         </div>
       </div>
 
