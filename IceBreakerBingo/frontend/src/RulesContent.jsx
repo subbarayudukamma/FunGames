@@ -7,9 +7,9 @@ export default function RulesContent({ showVersion = false }) {
     <div style={{ textAlign: 'left' }}>
       <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🎯 How It Works</h3>
       <ul style={{ paddingLeft: '1.25rem', lineHeight: '1.7', fontSize: '0.9rem', margin: '0 0 1rem' }}>
-        <li>Each tile = a prompt that encourages you to interact with someone</li>
-        <li>Your answers are the <strong>people you meet and talk to</strong></li>
-        <li>Pick <strong>anyone</strong> — including people from your own team! 🙂</li>
+        <li>Each tile = a prompt describing a person to find (e.g. "someone who has a pet")</li>
+        <li>Mingle and find <strong>people who match the criteria</strong>, then add them as your answer</li>
+        <li>Anyone who matches counts — same team or different team. A different-team match earns you <strong>more raffle entries</strong>! 🙂</li>
       </ul>
 
       <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🏅 Scoring</h3>
