@@ -26,12 +26,11 @@ export default function RulesContent({ showVersion = false }) {
         💡 Don't worry if you don't remember all the names you entered. We'll connect you with the people in your answers via email after the game.
       </p>
 
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🧩 Team Puzzle Reward</h3>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🧩 Earn Extra Raffle Entries</h3>
       <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-        Teams are formed by a quick puzzle! Grab a piece, find the people whose pieces complete your
-        small puzzle (about 8–9 pieces), and that becomes your team — sit together at the same table.
-        Every member of a team that completes its puzzle and is seated together earns
-        <strong> 5 extra raffle entries</strong>. 🧩
+        Complete the puzzle with the piece you got, then sit together as a team. When the admin checks
+        your table and sees a completed puzzle, everyone at the table gets
+        <strong> 10 extra raffle entries</strong>. 🧩
       </p>
 
       <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🎁 Raffle & Prizes</h3>

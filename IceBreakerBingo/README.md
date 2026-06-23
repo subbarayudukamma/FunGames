@@ -230,8 +230,8 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ **Admin verification flow** — verify in person, then claim or dismiss (classic mode)
 - ✅ Claimed lines shown with red rectangle + dimmed on all players' cards
 - ✅ **Raffle mode** — weighted draw; winners removed from pool. Each completed tile earns **1 entry** for a same-team connection or **3 entries** for a cross-team connection
-- ✅ **Team Puzzle Reward** — teams are formed by completing a small (~8–9 piece) puzzle; each member of a team that finishes its puzzle and sits together earns 5 bonus raffle entries (awarded via admin extra entries)
-- ✅ **Extra raffle entries** — admin can award bonus entries to specific players during the game (defaults to 5)
+- ✅ **Earn extra raffle entries** — complete the puzzle from the piece you got and sit together as a team; when the admin verifies your table has a completed puzzle, everyone gets 10 bonus raffle entries (awarded via admin extra entries)
+- ✅ **Extra raffle entries** — admin can award bonus entries to specific players during the game (defaults to 10)
 - ✅ **Raffle leaderboard** — shows bingo entries, extra entries, and total entries per player
 - ✅ **Raffle logging** — all draws timestamped and included in JSON export
 - ✅ Admin dashboard with leaderboard

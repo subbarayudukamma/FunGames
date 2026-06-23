@@ -53,7 +53,7 @@ export default function Admin() {
   const [lastDrawn, setLastDrawn] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [extraEntryCount, setExtraEntryCount] = useState(5);
+  const [extraEntryCount, setExtraEntryCount] = useState(10);
   const [extraEntryPlayers, setExtraEntryPlayers] = useState([]);
   const [extraEntrySearch, setExtraEntrySearch] = useState('');
 
