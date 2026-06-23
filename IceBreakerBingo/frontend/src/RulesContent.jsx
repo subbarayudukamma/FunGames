@@ -16,7 +16,7 @@ export default function RulesContent({ showVersion = false }) {
       <ul style={{ paddingLeft: '1.25rem', lineHeight: '1.7', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
         <li>✅ Log into the app → <strong>1 raffle entry</strong></li>
         <li>✅ Complete a tile with a <strong>teammate</strong> (same team) → <strong>+1 entry</strong></li>
-        <li>✅ Complete a tile with someone from a <strong>different team</strong> → <strong>+2 entries</strong></li>
+        <li>✅ Complete a tile with someone from a <strong>different team</strong> → <strong>+3 entries</strong></li>
       </ul>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
         The more people you connect with — especially across teams — the better your odds! 🎉
@@ -24,6 +24,14 @@ export default function RulesContent({ showVersion = false }) {
 
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', fontStyle: 'italic' }}>
         💡 Don't worry if you don't remember all the names you entered. We'll connect you with the people in your answers via email after the game.
+      </p>
+
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🧩 Team Puzzle Reward</h3>
+      <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
+        Teams are formed by a quick puzzle! Grab a piece, find the people whose pieces complete your
+        small puzzle (about 8–9 pieces), and that becomes your team — sit together at the same table.
+        Every member of a team that completes its puzzle and is seated together earns
+        <strong> 5 extra raffle entries</strong>. 🧩
       </p>
 
       <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🎁 Raffle & Prizes</h3>
@@ -39,12 +47,6 @@ export default function RulesContent({ showVersion = false }) {
           <li>• Kati</li>
         </ul>
       </ul>
-
-      <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🧩 Team Puzzle Reward</h3>
-      <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-        Teams that complete the jigsaw puzzle <strong>and</strong> are seated at the same table earn
-        each team member <strong>5 extra raffle entries</strong>. Find your table, finish the puzzle together! 🧩
-      </p>
 
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: showVersion ? '1rem' : 0 }}>
         🏆 Winners will be chosen in order of the draw.

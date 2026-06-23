@@ -212,7 +212,7 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 1. Admin selects **Raffle Bingo** mode and loads questions at `/admin?key=SECRET`
 2. Players join via QR code → enter alias + name + team
 3. Admin clicks "Release Bingo" → players see randomized 5×5 cards
-4. Players mingle and fill as many boxes as possible (each box = 1 raffle entry for a same-team connection, 2 for a cross-team connection)
+4. Players mingle and fill as many boxes as possible (each box = 1 raffle entry for a same-team connection, 3 for a cross-team connection)
 5. Everyone gets at least 1 entry (free center space)
 6. Admin clicks "Close Game" → players see "Raffle Time!" screen
 7. Admin clicks "Draw Next Winner" repeatedly → weighted random selection
@@ -229,8 +229,8 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ **Notification queue** — players auto-queue when completing a line (classic mode)
 - ✅ **Admin verification flow** — verify in person, then claim or dismiss (classic mode)
 - ✅ Claimed lines shown with red rectangle + dimmed on all players' cards
-- ✅ **Raffle mode** — weighted draw; winners removed from pool. Each completed tile earns **1 entry** for a same-team connection or **2 entries** for a cross-team connection
-- ✅ **Team Puzzle Reward** — teams that complete the jigsaw puzzle and sit at the same table each earn 5 bonus raffle entries (awarded via admin extra entries)
+- ✅ **Raffle mode** — weighted draw; winners removed from pool. Each completed tile earns **1 entry** for a same-team connection or **3 entries** for a cross-team connection
+- ✅ **Team Puzzle Reward** — teams are formed by completing a small (~8–9 piece) puzzle; each member of a team that finishes its puzzle and sits together earns 5 bonus raffle entries (awarded via admin extra entries)
 - ✅ **Extra raffle entries** — admin can award bonus entries to specific players during the game (defaults to 5)
 - ✅ **Raffle leaderboard** — shows bingo entries, extra entries, and total entries per player
 - ✅ **Raffle logging** — all draws timestamped and included in JSON export

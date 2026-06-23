@@ -642,7 +642,7 @@ export default function Admin() {
           <h2>🎟️ Raffle Mode Active</h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             Players collect raffle entries by completing boxes — <strong>1 entry</strong> for a same-team
-            connection and <strong>2 entries</strong> for a cross-team connection.
+            connection and <strong>3 entries</strong> for a cross-team connection.
             When ready, click <strong>Close Game</strong> to stop submissions and begin drawing winners.
           </p>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>

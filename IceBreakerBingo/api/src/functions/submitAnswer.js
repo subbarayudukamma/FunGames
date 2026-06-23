@@ -84,7 +84,7 @@ app.http("submitAnswer", {
 
       // Recompute raffle score from full card state (idempotent — re-submitting
       // the same answer cannot inflate the score).
-      // 1 point per same-team tile, 2 points per different-team tile, 1 for free space.
+      // 1 point per same-team tile, 3 points per different-team tile, 1 for free space.
       player.score = computeScore(player.card, playerLookup, submitterTeam);
 
       // Detect NEW wins and add to notification queue (classic mode only)

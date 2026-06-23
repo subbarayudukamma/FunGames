@@ -55,7 +55,7 @@ function checkWins(card) {
 }
 
 // Compute a player's raffle score from their card.
-// Free space = 1 point. Each completed tile = 2 points if at least one selected
+// Free space = 1 point. Each completed tile = 3 points if at least one selected
 // person is on a different team than the submitter, otherwise 1 point (all same team).
 // Derived purely from card state, so re-submitting the same answer never inflates the score.
 function computeScore(card, playerLookup = {}, submitterTeam = "") {
@@ -81,7 +81,7 @@ function computeScore(card, playerLookup = {}, submitterTeam = "") {
       return !submitterTeam || !targetTeam || targetTeam !== submitterTeam;
     });
 
-    score += anyDifferentTeam ? 2 : 1;
+    score += anyDifferentTeam ? 3 : 1;
   }
   return score;
 }
