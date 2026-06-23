@@ -233,7 +233,7 @@ async function run() {
   if (dashboard2.leaderboard) {
     console.log('   Top 5 with raffle breakdown:');
     dashboard2.leaderboard.slice(0, 5).forEach((p, i) => {
-      const bingoEntries = p.completedCount || 1;
+      const bingoEntries = p.score ?? p.completedCount ?? 1;
       const extraEntries = p.extraRaffleEntries || 0;
       console.log(`     ${i + 1}. ${p.displayName}: Bingo=${bingoEntries} + Extra=${extraEntries} = Total ${bingoEntries + extraEntries}`);
     });

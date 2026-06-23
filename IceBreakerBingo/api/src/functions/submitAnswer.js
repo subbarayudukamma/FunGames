@@ -1,6 +1,6 @@
 const { app } = require("@azure/functions");
 const { ensureInitialized } = require("./cosmosClient");
-const { checkWins } = require("./bingoLogic");
+const { checkWins, computeScore } = require("./bingoLogic");
 const { validatePlayroom, playroomDenied } = require("./playroom");
 
 app.http("submitAnswer", {
@@ -44,11 +44,6 @@ app.http("submitAnswer", {
         if (!person.alias || !validAliases.has(person.alias)) {
           return { status: 400, jsonBody: { error: `Invalid player: ${person.alias || person.displayName || 'unknown'}. Please select from the roster.` } };
         }
-        // Cannot pick someone from the same team
-        const target = playerLookup[person.alias];
-        if (submitterTeam && target?.teamName && target.teamName === submitterTeam) {
-          return { status: 400, jsonBody: { error: `Cannot select ${person.displayName} — they are on your same team (${submitterTeam}).` } };
-        }
       }
 
       const playerId = `player-${alias.toLowerCase()}`;
@@ -86,6 +81,11 @@ app.http("submitAnswer", {
       player.completedRows = wins.completedRows;
       player.completedColumns = wins.completedColumns;
       player.completedDiagonals = wins.completedDiagonals;
+
+      // Recompute raffle score from full card state (idempotent — re-submitting
+      // the same answer cannot inflate the score).
+      // 1 point per same-team tile, 2 points per different-team tile, 1 for free space.
+      player.score = computeScore(player.card, playerLookup, submitterTeam);
 
       // Detect NEW wins and add to notification queue (classic mode only)
       const newNotifications = [];

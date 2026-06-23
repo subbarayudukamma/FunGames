@@ -76,6 +76,7 @@ app.http("join", {
         card,
         joinedAt: new Date().toISOString(),
         completedCount: card.length > 0 ? 1 : 0,
+        score: card.length > 0 ? 1 : 0,
         hasRow: false,
         hasColumn: false,
         hasDiagonal: false,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyCard, submitAnswer, getGameState, getRoster } from '../api';
+import RulesContent from '../RulesContent';
 
 const ROWS = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24]];
 const COLS = [[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24]];
@@ -18,6 +19,7 @@ export default function Play() {
   const [roster, setRoster] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const navigate = useNavigate();
 
   const alias = localStorage.getItem('bingo_alias');
@@ -69,11 +71,9 @@ export default function Play() {
     if (value.trim().length > 0) {
       const lower = value.toLowerCase();
       const alreadySelected = new Set(selectedPeople.map(p => p.alias));
-      const playerTeam = localStorage.getItem('bingo_team') || '';
       const matches = roster.filter(r =>
         !alreadySelected.has(r.alias) &&
         r.alias !== alias &&
-        r.teamName !== playerTeam &&
         (r.displayName.toLowerCase().includes(lower) ||
         r.alias.toLowerCase().includes(lower) ||
         (r.teamName && r.teamName.toLowerCase().includes(lower)))
@@ -216,11 +216,11 @@ export default function Play() {
               You completed <strong>{playerData?.completedCount || 0}/25</strong> squares
             </p>
             <p style={{ marginTop: '0.5rem', fontSize: '1.1rem' }}>
-              🎟️ Your total raffle entries: <strong style={{ color: 'var(--primary)' }}>{(playerData?.completedCount || 0) + (playerData?.extraRaffleEntries || 0)}</strong>
+              🎟️ Your total raffle entries: <strong style={{ color: 'var(--primary)' }}>{(playerData?.score ?? playerData?.completedCount ?? 0) + (playerData?.extraRaffleEntries || 0)}</strong>
             </p>
             {(playerData?.extraRaffleEntries || 0) > 0 && (
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                ({playerData?.completedCount || 0} from bingo + {playerData?.extraRaffleEntries || 0} bonus)
+                ({playerData?.score ?? playerData?.completedCount ?? 0} from bingo + {playerData?.extraRaffleEntries || 0} bonus)
               </p>
             )}
             <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
@@ -233,8 +233,9 @@ export default function Play() {
   }
 
   const completedCount = playerData?.completedCount || 0;
+  const score = playerData?.score ?? completedCount;
   const extraRaffleEntries = playerData?.extraRaffleEntries || 0;
-  const totalEntries = completedCount + extraRaffleEntries;
+  const totalEntries = score + extraRaffleEntries;
 
   return (
     <div className="container">
@@ -260,7 +261,7 @@ export default function Play() {
         <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
           <span>🎟️ Raffle entries: <strong style={{ color: 'var(--primary)' }}>{totalEntries}</strong></span>
           <span style={{ fontSize: '0.75rem' }}>
-            ({completedCount} bingo{extraRaffleEntries > 0 && ` + ${extraRaffleEntries} bonus`})
+            ({score} bingo{extraRaffleEntries > 0 && ` + ${extraRaffleEntries} bonus`})
           </span>
         </div>
       </div>
@@ -415,6 +416,37 @@ export default function Play() {
       <button className="refresh-btn" onClick={fetchCard} title="Refresh">
         🔄
       </button>
+
+      {/* Rules / Help button */}
+      <button
+        onClick={() => setShowRules(true)}
+        title="How to play & prizes"
+        style={{
+          position: 'fixed', bottom: '1rem', left: '1rem', zIndex: 1000,
+          width: '44px', height: '44px', borderRadius: '50%',
+          background: 'var(--primary, #3b82f6)', color: 'white',
+          border: 'none', cursor: 'pointer', fontSize: '1.4rem',
+          fontWeight: 700, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        }}
+      >
+        ?
+      </button>
+
+      {/* Rules modal */}
+      {showRules && (
+        <div className="modal-overlay" onClick={() => setShowRules(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+            <h3 style={{ marginTop: 0 }}>📋 How to Play & Prizes</h3>
+            <RulesContent showVersion />
+            <div className="modal-actions">
+              <button className="btn" style={{ background: 'var(--border)' }} onClick={() => setShowRules(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

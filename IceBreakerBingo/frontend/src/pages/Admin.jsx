@@ -53,7 +53,7 @@ export default function Admin() {
   const [lastDrawn, setLastDrawn] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [extraEntryCount, setExtraEntryCount] = useState(1);
+  const [extraEntryCount, setExtraEntryCount] = useState(5);
   const [extraEntryPlayers, setExtraEntryPlayers] = useState([]);
   const [extraEntrySearch, setExtraEntrySearch] = useState('');
 
@@ -641,7 +641,8 @@ export default function Admin() {
         <div className="card" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
           <h2>🎟️ Raffle Mode Active</h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Players are collecting raffle entries by completing boxes. Each box = 1 entry into the weighted raffle.
+            Players collect raffle entries by completing boxes — <strong>1 entry</strong> for a same-team
+            connection and <strong>2 entries</strong> for a cross-team connection.
             When ready, click <strong>Close Game</strong> to stop submissions and begin drawing winners.
           </p>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
@@ -960,9 +961,9 @@ export default function Admin() {
                     <td>{i + 1}</td>
                     <td><strong>{p.displayName}</strong><br/><small>{p.alias}</small></td>
                     <td>{p.completedCount}/25</td>
-                    {gameMode === 'raffle' && <td>{p.completedCount || 1}</td>}
+                    {gameMode === 'raffle' && <td>{p.score ?? p.completedCount ?? 1}</td>}
                     {gameMode === 'raffle' && <td>{p.extraRaffleEntries || 0}</td>}
-                    {gameMode === 'raffle' && <td><strong>{(p.completedCount || 1) + (p.extraRaffleEntries || 0)}</strong></td>}
+                    {gameMode === 'raffle' && <td><strong>{(p.score ?? p.completedCount ?? 1) + (p.extraRaffleEntries || 0)}</strong></td>}
                     <td>{p.hasRow ? <span className="badge badge-success">✓</span> : '—'}</td>
                     <td>{p.hasColumn ? <span className="badge badge-success">✓</span> : '—'}</td>
                     <td>{p.hasDiagonal ? <span className="badge badge-success">✓</span> : '—'}</td>

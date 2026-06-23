@@ -1,8 +1,14 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { version } from '../package.json';
 
 export default function VersionInfo() {
   const [show, setShow] = useState(false);
+  const location = useLocation();
+
+  // The bingo (Play) page has its own "?" rules button which includes version info,
+  // so hide the floating "i" there to avoid duplication.
+  if (location.pathname === '/play') return null;
 
   return (
     <>

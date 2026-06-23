@@ -49,7 +49,7 @@ app.http("adminDashboard", {
     try {
       const { playersContainer } = await ensureInitialized();
       const { resources: players } = await playersContainer.items
-        .query("SELECT c.alias, c.displayName, c.completedCount, c.hasRow, c.hasColumn, c.hasDiagonal, c.hasBlackout, c.card, c.completedRows, c.completedColumns, c.completedDiagonals, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player' ORDER BY c.completedCount DESC")
+        .query("SELECT c.alias, c.displayName, c.completedCount, c.score, c.hasRow, c.hasColumn, c.hasDiagonal, c.hasBlackout, c.card, c.completedRows, c.completedColumns, c.completedDiagonals, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player' ORDER BY c.completedCount DESC")
         .fetchAll();
 
       const stats = {
@@ -63,6 +63,7 @@ app.http("adminDashboard", {
           alias: p.alias,
           displayName: p.displayName,
           completedCount: p.completedCount,
+          score: p.score ?? p.completedCount ?? 1,
           hasRow: p.hasRow,
           hasColumn: p.hasColumn,
           hasDiagonal: p.hasDiagonal,
@@ -114,6 +115,7 @@ app.http("adminRelease", {
         if (player.card.length === 0) {
           player.card = generateCard(config.questions);
           player.completedCount = 1; // free space
+          player.score = 1; // base raffle entry (free space)
           await playersContainer.item(player.id, "player").replace(player);
         }
       }
@@ -436,7 +438,7 @@ app.http("adminExport", {
 
       // Get all players with full card data
       const { resources: players } = await playersContainer.items
-        .query("SELECT c.alias, c.displayName, c.teamName, c.card, c.completedCount, c.joinedAt FROM c WHERE c.partitionKey = 'player'")
+        .query("SELECT c.alias, c.displayName, c.teamName, c.card, c.completedCount, c.score, c.extraRaffleEntries, c.joinedAt FROM c WHERE c.partitionKey = 'player'")
         .fetchAll();
 
       // Build export: each player gets their answers with question text + structured connections
@@ -445,6 +447,9 @@ app.http("adminExport", {
         displayName: p.displayName,
         teamName: p.teamName || '',
         completedCount: p.completedCount || 0,
+        score: p.score ?? p.completedCount ?? 0,
+        extraRaffleEntries: p.extraRaffleEntries || 0,
+        totalRaffleEntries: (p.score ?? p.completedCount ?? 0) + (p.extraRaffleEntries || 0),
         joinedAt: p.joinedAt,
         answers: (p.card || [])
           .filter(cell => cell.answer)
@@ -583,7 +588,7 @@ app.http("adminDrawRaffle", {
 
       // Get all players
       const { resources: players } = await playersContainer.items
-        .query("SELECT c.alias, c.displayName, c.teamName, c.completedCount, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player'")
+        .query("SELECT c.alias, c.displayName, c.teamName, c.completedCount, c.score, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player'")
         .fetchAll();
 
       // Exclude previous winners
@@ -594,10 +599,10 @@ app.http("adminDrawRaffle", {
         return { status: 400, jsonBody: { error: "No eligible players remaining in the pool" } };
       }
 
-      // Build weighted pool (bingo entries + extra entries)
+      // Build weighted pool (bingo score + extra entries)
       const pool = [];
       for (const player of eligiblePlayers) {
-        const bingoEntries = player.completedCount || 1;
+        const bingoEntries = player.score ?? player.completedCount ?? 1;
         const extraEntries = player.extraRaffleEntries || 0;
         const totalEntries = bingoEntries + extraEntries;
         for (let i = 0; i < totalEntries; i++) {
@@ -613,7 +618,7 @@ app.http("adminDrawRaffle", {
         winner: winner.alias,
         displayName: winner.displayName,
         teamName: winner.teamName || '',
-        entries: (winner.completedCount || 1) + (winner.extraRaffleEntries || 0),
+        entries: (winner.score ?? winner.completedCount ?? 1) + (winner.extraRaffleEntries || 0),
         totalPoolEntries: pool.length,
         drawnAt: new Date().toISOString(),
         drawNumber: config.raffleResults.length + 1,

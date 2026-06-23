@@ -212,7 +212,7 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 1. Admin selects **Raffle Bingo** mode and loads questions at `/admin?key=SECRET`
 2. Players join via QR code → enter alias + name + team
 3. Admin clicks "Release Bingo" → players see randomized 5×5 cards
-4. Players mingle and fill as many boxes as possible (each box = 1 raffle entry)
+4. Players mingle and fill as many boxes as possible (each box = 1 raffle entry for a same-team connection, 2 for a cross-team connection)
 5. Everyone gets at least 1 entry (free center space)
 6. Admin clicks "Close Game" → players see "Raffle Time!" screen
 7. Admin clicks "Draw Next Winner" repeatedly → weighted random selection
@@ -229,13 +229,15 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ **Notification queue** — players auto-queue when completing a line (classic mode)
 - ✅ **Admin verification flow** — verify in person, then claim or dismiss (classic mode)
 - ✅ Claimed lines shown with red rectangle + dimmed on all players' cards
-- ✅ **Raffle mode** — each box = 1 entry; weighted random draw; winners removed from pool
-- ✅ **Extra raffle entries** — admin can award bonus entries to specific players during the game
+- ✅ **Raffle mode** — weighted draw; winners removed from pool. Each completed tile earns **1 entry** for a same-team connection or **2 entries** for a cross-team connection
+- ✅ **Team Puzzle Reward** — teams that complete the jigsaw puzzle and sit at the same table each earn 5 bonus raffle entries (awarded via admin extra entries)
+- ✅ **Extra raffle entries** — admin can award bonus entries to specific players during the game (defaults to 5)
 - ✅ **Raffle leaderboard** — shows bingo entries, extra entries, and total entries per player
 - ✅ **Raffle logging** — all draws timestamped and included in JSON export
 - ✅ Admin dashboard with leaderboard
 - ✅ **Team name** — players enter their team on join, visible in admin lobby
-- ✅ **Roster-only answers** — players can only select from registered participants (no free-text); same-team members excluded; multiple people can be selected per question as tags/chips
+- ✅ **Roster-only answers** — players can only select from registered participants (no free-text); any team member can be selected; multiple people can be selected per question as tags/chips
+- ✅ **In-game rules** — a `?` button on the bingo card opens the full rules/prizes (with version info); session never expires so players can leave and return anytime
 - ✅ **Alias disambiguation** — suggestions show `@alias` next to display name to distinguish people with the same name; search matches on name or alias
 - ✅ **Re-join support** — if a player re-joins with same alias but different name/team, their info is updated while preserving card and progress
 - ✅ **Structured connections export** — export includes a `connections` array mapping every player pair with the question that connected them (for follow-up emails)

@@ -54,6 +54,38 @@ function checkWins(card) {
   };
 }
 
+// Compute a player's raffle score from their card.
+// Free space = 1 point. Each completed tile = 2 points if at least one selected
+// person is on a different team than the submitter, otherwise 1 point (all same team).
+// Derived purely from card state, so re-submitting the same answer never inflates the score.
+function computeScore(card, playerLookup = {}, submitterTeam = "") {
+  let score = 0;
+  for (const cell of card || []) {
+    if (cell.answer === null || cell.answer === undefined) continue;
+
+    if (cell.questionId === "free") {
+      score += 1;
+      continue;
+    }
+
+    const people = Array.isArray(cell.answer) ? cell.answer : [];
+    if (people.length === 0) {
+      score += 1;
+      continue;
+    }
+
+    const anyDifferentTeam = people.some((p) => {
+      const target = playerLookup[p.alias];
+      const targetTeam = (target && target.teamName) || p.teamName || "";
+      // Award the higher value unless we can confirm they share a team.
+      return !submitterTeam || !targetTeam || targetTeam !== submitterTeam;
+    });
+
+    score += anyDifferentTeam ? 2 : 1;
+  }
+  return score;
+}
+
 function shuffleArray(array) {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -93,4 +125,4 @@ function generateCard(questions) {
   return card;
 }
 
-module.exports = { checkWins, generateCard, shuffleArray, ROWS, COLUMNS, DIAGONALS };
+module.exports = { checkWins, computeScore, generateCard, shuffleArray, ROWS, COLUMNS, DIAGONALS };

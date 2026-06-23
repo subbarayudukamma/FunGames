@@ -30,6 +30,7 @@ app.http("myCard", {
           displayName: player.displayName,
           card: player.card,
           completedCount: player.completedCount,
+          score: player.score ?? player.completedCount ?? 0,
           extraRaffleEntries: player.extraRaffleEntries || 0,
           hasRow: player.hasRow,
           hasColumn: player.hasColumn,
