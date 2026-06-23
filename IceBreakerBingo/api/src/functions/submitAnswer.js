@@ -1,5 +1,5 @@
 const { app } = require("@azure/functions");
-const { ensureInitialized } = require("./cosmosClient");
+const { ensureInitialized, updateConfig } = require("./cosmosClient");
 const { checkWins, computeScore } = require("./bingoLogic");
 const { validatePlayroom, playroomDenied } = require("./playroom");
 
@@ -126,9 +126,10 @@ app.http("submitAnswer", {
 
       // Add notifications to game config queue
       if (newNotifications.length > 0) {
-        if (!config.winQueue) config.winQueue = [];
-        config.winQueue.push(...newNotifications);
-        await gameContainer.item("config", "game").replace(config);
+        await updateConfig((cfg) => {
+          if (!cfg.winQueue) cfg.winQueue = [];
+          cfg.winQueue.push(...newNotifications);
+        });
       }
 
       await playersContainer.item(playerId, "player").replace(player);

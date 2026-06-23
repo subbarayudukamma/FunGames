@@ -19,6 +19,7 @@ import {
   adminAddRaffleEntries,
   adminClaimSession,
   adminGetSession,
+  adminGetPlayerAnswers,
   getGameState,
 } from '../api';
 
@@ -56,6 +57,21 @@ export default function Admin() {
   const [extraEntryCount, setExtraEntryCount] = useState(10);
   const [extraEntryPlayers, setExtraEntryPlayers] = useState([]);
   const [extraEntrySearch, setExtraEntrySearch] = useState('');
+  const [winnerAnswers, setWinnerAnswers] = useState(null);
+  const [winnerAnswersLoading, setWinnerAnswersLoading] = useState(false);
+
+  const handleViewWinnerAnswers = async (alias) => {
+    setWinnerAnswers({ alias, loading: true });
+    setWinnerAnswersLoading(true);
+    try {
+      const data = await adminGetPlayerAnswers(adminKey, alias);
+      setWinnerAnswers(data && !data.error ? data : { alias, error: data?.error || 'Failed to load answers' });
+    } catch {
+      setWinnerAnswers({ alias, error: 'Failed to load answers' });
+    } finally {
+      setWinnerAnswersLoading(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!adminKey || !adminName) return;
@@ -127,59 +143,77 @@ export default function Admin() {
   const handleRelease = async () => {
     if (!window.confirm('Release bingo cards to all players?')) return;
     setLoading(true);
-    const result = await adminRelease(adminKey);
-    setMessage(result.message || result.error);
-    setLoading(false);
+    try {
+      const result = await adminRelease(adminKey);
+      setMessage(result.message || result.error);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
   const handleReset = async () => {
     if (!window.confirm('Reset the entire game? This will delete all players and progress!')) return;
     setLoading(true);
-    const result = await adminReset(adminKey);
-    setMessage(result.message || result.error);
-    setLoading(false);
+    try {
+      const result = await adminReset(adminKey);
+      setMessage(result.message || result.error);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
   const handleSetMode = async (mode) => {
     setLoading(true);
-    const result = await adminSetMode(adminKey, mode);
-    setMessage(result.message || result.error);
-    setLoading(false);
+    try {
+      const result = await adminSetMode(adminKey, mode);
+      setMessage(result.message || result.error);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
   const handleCloseGame = async () => {
     if (!window.confirm('Close the game? Players will no longer be able to submit answers. Ready for raffle draw!')) return;
     setLoading(true);
-    const result = await adminCloseGame(adminKey);
-    setMessage(result.message || result.error);
-    setLoading(false);
+    try {
+      const result = await adminCloseGame(adminKey);
+      setMessage(result.message || result.error);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
   const handleDrawRaffle = async () => {
     setLoading(true);
     setLastDrawn(null);
-    const result = await adminDrawRaffle(adminKey);
-    if (result.error) {
-      setMessage(result.error);
-    } else {
-      setLastDrawn(result);
-      setMessage(`🎉 Winner #${result.drawNumber}: ${result.displayName} (${result.entries} entries)`);
+    try {
+      const result = await adminDrawRaffle(adminKey);
+      if (result.error) {
+        setMessage(result.error);
+      } else {
+        setLastDrawn(result);
+        setMessage(`🎉 Winner #${result.drawNumber}: ${result.displayName} (${result.entries} entries)`);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
     fetchData();
   };
 
   const handleResetRaffle = async () => {
     if (!window.confirm('Clear all raffle results? You can re-draw after this.')) return;
     setLoading(true);
-    const result = await adminResetRaffle(adminKey);
-    setMessage(result.message || result.error);
-    setLastDrawn(null);
-    setLoading(false);
+    try {
+      const result = await adminResetRaffle(adminKey);
+      setMessage(result.message || result.error);
+      setLastDrawn(null);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
@@ -189,11 +223,14 @@ export default function Admin() {
       return;
     }
     setLoading(true);
-    const result = await adminAddRaffleEntries(adminKey, extraEntryCount, extraEntryPlayers.map(p => p.alias));
-    setMessage(result.message || result.error);
-    setExtraEntryPlayers([]);
-    setExtraEntrySearch('');
-    setLoading(false);
+    try {
+      const result = await adminAddRaffleEntries(adminKey, extraEntryCount, extraEntryPlayers.map(p => p.alias));
+      setMessage(result.message || result.error);
+      setExtraEntryPlayers([]);
+      setExtraEntrySearch('');
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
@@ -209,31 +246,43 @@ export default function Admin() {
 
   const handleSaveQuestions = async () => {
     setLoading(true);
-    const result = await adminSaveQuestions(adminKey, questions);
-    setMessage(result.message || result.error);
-    setLoading(false);
+    try {
+      const result = await adminSaveQuestions(adminKey, questions);
+      setMessage(result.message || result.error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClaimWin = async (category, winner) => {
     setLoading(true);
-    const result = await adminClaimWin(adminKey, category, winner);
-    setMessage(result.message || result.error);
-    setLoading(false);
+    try {
+      const result = await adminClaimWin(adminKey, category, winner);
+      setMessage(result.message || result.error);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
   const handleUnclaimWin = async (category) => {
     setLoading(true);
-    const result = await adminUnclaimWin(adminKey, category);
-    setMessage(result.message || result.error);
-    setLoading(false);
+    try {
+      const result = await adminUnclaimWin(adminKey, category);
+      setMessage(result.message || result.error);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
   const handleDismiss = async (category, player) => {
     setLoading(true);
-    await adminDismissQueueItem(adminKey, category, player);
-    setLoading(false);
+    try {
+      await adminDismissQueueItem(adminKey, category, player);
+    } finally {
+      setLoading(false);
+    }
     fetchData();
   };
 
@@ -600,6 +649,16 @@ export default function Admin() {
               <div style={{ fontSize: '0.8rem', color: '#92400e', marginTop: '0.25rem' }}>
                 {lastDrawn.remainingPlayers} players remaining in pool
               </div>
+              <button
+                onClick={() => handleViewWinnerAnswers(lastDrawn.winner)}
+                style={{
+                  marginTop: '0.75rem', background: '#f59e0b', color: '#fff',
+                  border: 'none', borderRadius: '8px', padding: '0.4rem 0.9rem',
+                  cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
+                }}
+              >
+                🔍 View answers to verify
+              </button>
             </div>
           )}
 
@@ -622,7 +681,19 @@ export default function Admin() {
                   {raffleResults.map((r, i) => (
                     <tr key={i}>
                       <td>{r.drawNumber || i + 1}</td>
-                      <td><strong>{r.displayName}</strong></td>
+                      <td>
+                        <button
+                          onClick={() => handleViewWinnerAnswers(r.winner)}
+                          style={{
+                            background: 'none', border: 'none', padding: 0,
+                            color: 'var(--primary, #2563eb)', cursor: 'pointer',
+                            fontWeight: 700, textDecoration: 'underline', fontSize: 'inherit',
+                          }}
+                          title="View this winner's questions & answers to verify in person"
+                        >
+                          {r.displayName}
+                        </button>
+                      </td>
                       <td>@{r.winner}</td>
                       <td>{r.teamName || '—'}</td>
                       <td>{r.entries}</td>
@@ -784,7 +855,7 @@ export default function Admin() {
                 {players.map((p) => (
                   <tr key={p.alias}>
                     <td>{p.alias}</td>
-                    <td>{p.displayName}</td>
+                    <td>{p.displayName}{p.teamName ? <span style={{ color: 'var(--text-muted)' }}> ({p.teamName})</span> : ''}</td>
                     <td>{new Date(p.joinedAt).toLocaleTimeString()}</td>
                   </tr>
                 ))}
@@ -959,7 +1030,7 @@ export default function Admin() {
                 {dashboard.leaderboard?.map((p, i) => (
                   <tr key={p.alias}>
                     <td>{i + 1}</td>
-                    <td><strong>{p.displayName}</strong><br/><small>{p.alias}</small></td>
+                    <td><strong>{p.displayName}</strong>{p.teamName ? <span style={{ color: 'var(--text-muted)' }}> ({p.teamName})</span> : ''}<br/><small>{p.alias}</small></td>
                     <td>{p.completedCount}/25</td>
                     {gameMode === 'raffle' && <td>{p.score ?? p.completedCount ?? 1}</td>}
                     {gameMode === 'raffle' && <td>{p.extraRaffleEntries || 0}</td>}
@@ -1016,6 +1087,75 @@ export default function Admin() {
       <button className="refresh-btn" onClick={fetchData} title="Refresh">
         🔄
       </button>
+
+      {/* Winner answers modal — verify a raffle winner's Q&A in person */}
+      {winnerAnswers && (
+        <div
+          onClick={() => setWinnerAnswers(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: '1rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--bg, #fff)', borderRadius: '12px', maxWidth: '600px',
+              width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: '1.5rem',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.2rem' }}>
+                  {winnerAnswers.displayName || winnerAnswers.alias}
+                </h2>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  @{winnerAnswers.alias}{winnerAnswers.teamName ? ` • ${winnerAnswers.teamName}` : ''}
+                </div>
+              </div>
+              <button
+                onClick={() => setWinnerAnswers(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {winnerAnswersLoading || winnerAnswers.loading ? (
+              <p style={{ color: 'var(--text-muted)' }}>Loading answers…</p>
+            ) : winnerAnswers.error ? (
+              <p style={{ color: 'var(--danger, #dc2626)' }}>{winnerAnswers.error}</p>
+            ) : (winnerAnswers.answers || []).length === 0 ? (
+              <p style={{ color: 'var(--text-muted)' }}>This player has no submitted answers yet.</p>
+            ) : (
+              <>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 0 }}>
+                  Pick a question at random and verify the listed people in person.
+                </p>
+                <ol style={{ paddingLeft: '1.25rem', margin: 0 }}>
+                  {winnerAnswers.answers.map((a, idx) => (
+                    <li key={idx} style={{ marginBottom: '0.75rem' }}>
+                      <div style={{ fontWeight: 600 }}>{a.question}</div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                        {(Array.isArray(a.answer) ? a.answer : [a.answer])
+                          .map((person) =>
+                            typeof person === 'string'
+                              ? person
+                              : `${person.displayName || person.alias}${person.teamName ? ` (${person.teamName})` : ''}`
+                          )
+                          .join(', ')}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

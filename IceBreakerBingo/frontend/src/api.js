@@ -132,6 +132,11 @@ export async function adminExport(key) {
   return res.json();
 }
 
+export async function adminGetPlayerAnswers(key, alias) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/player-answers?key=${encodeURIComponent(key)}&alias=${encodeURIComponent(alias)}`));
+  return res.json();
+}
+
 export async function adminSetMode(key, mode) {
   const res = await fetch(withPlayroom(`${API_BASE}/game-admin/set-mode?key=${encodeURIComponent(key)}`), {
     method: 'POST',

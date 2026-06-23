@@ -1,5 +1,5 @@
 const { app } = require("@azure/functions");
-const { ensureInitialized } = require("./cosmosClient");
+const { ensureInitialized, updateConfig } = require("./cosmosClient");
 const { generateCard } = require("./bingoLogic");
 const { validatePlayroom, playroomDenied } = require("./playroom");
 
@@ -49,7 +49,7 @@ app.http("adminDashboard", {
     try {
       const { playersContainer } = await ensureInitialized();
       const { resources: players } = await playersContainer.items
-        .query("SELECT c.alias, c.displayName, c.completedCount, c.score, c.hasRow, c.hasColumn, c.hasDiagonal, c.hasBlackout, c.card, c.completedRows, c.completedColumns, c.completedDiagonals, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player' ORDER BY c.completedCount DESC")
+        .query("SELECT c.alias, c.displayName, c.teamName, c.completedCount, c.score, c.hasRow, c.hasColumn, c.hasDiagonal, c.hasBlackout, c.card, c.completedRows, c.completedColumns, c.completedDiagonals, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player' ORDER BY c.completedCount DESC")
         .fetchAll();
 
       const stats = {
@@ -62,6 +62,7 @@ app.http("adminDashboard", {
         leaderboard: players.map((p) => ({
           alias: p.alias,
           displayName: p.displayName,
+          teamName: p.teamName || '',
           completedCount: p.completedCount,
           score: p.score ?? p.completedCount ?? 1,
           hasRow: p.hasRow,
@@ -96,15 +97,18 @@ app.http("adminRelease", {
     }
 
     try {
-      const { gameContainer, playersContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
+      const { playersContainer } = await ensureInitialized();
 
-      if (config.questions.length < 24) {
-        return { status: 400, jsonBody: { error: "Need at least 24 questions (25th is free space)" } };
+      const { config, result } = await updateConfig((cfg) => {
+        if ((cfg.questions || []).length < 24) {
+          return { abort: true, error: "Need at least 24 questions (25th is free space)" };
+        }
+        cfg.gameState = "active";
+        return {};
+      });
+      if (result.error) {
+        return { status: 400, jsonBody: { error: result.error } };
       }
-
-      config.gameState = "active";
-      await gameContainer.item("config", "game").replace(config);
 
       // Generate cards for all players who joined during lobby
       const { resources: players } = await playersContainer.items
@@ -140,16 +144,16 @@ app.http("adminReset", {
     }
 
     try {
-      const { gameContainer, playersContainer } = await ensureInitialized();
+      const { playersContainer } = await ensureInitialized();
 
       // Reset game state
-      const { resource: config } = await gameContainer.item("config", "game").read();
-      config.gameState = "lobby";
-      config.gameMode = "raffle";
-      config.claimedWins = {};
-      config.winQueue = [];
-      config.raffleResults = [];
-      await gameContainer.item("config", "game").replace(config);
+      await updateConfig((cfg) => {
+        cfg.gameState = "lobby";
+        cfg.gameMode = "raffle";
+        cfg.claimedWins = {};
+        cfg.winQueue = [];
+        cfg.raffleResults = [];
+      });
 
       // Delete all players
       const { resources: players } = await playersContainer.items
@@ -209,15 +213,12 @@ app.http("adminSaveQuestions", {
         return { status: 400, jsonBody: { error: "questions must be an array" } };
       }
 
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
-
-      config.questions = questions.map((q, i) => ({
-        id: q.id || `q${i + 1}`,
-        text: q.text,
-      }));
-
-      await gameContainer.item("config", "game").replace(config);
+      const { config } = await updateConfig((cfg) => {
+        cfg.questions = questions.map((q, i) => ({
+          id: q.id || `q${i + 1}`,
+          text: q.text,
+        }));
+      });
 
       return { status: 200, jsonBody: { message: "Questions saved", count: config.questions.length } };
     } catch (error) {
@@ -246,27 +247,24 @@ app.http("adminClaimWin", {
         return { status: 400, jsonBody: { error: "category and winner are required" } };
       }
 
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
+      const { config } = await updateConfig((cfg) => {
+        if (!cfg.claimedWins) {
+          cfg.claimedWins = {};
+        }
 
-      if (!config.claimedWins) {
-        config.claimedWins = {};
-      }
+        cfg.claimedWins[category] = {
+          claimed: true,
+          winner: winner,
+          claimedAt: new Date().toISOString(),
+        };
 
-      config.claimedWins[category] = {
-        claimed: true,
-        winner: winner,
-        claimedAt: new Date().toISOString(),
-      };
-
-      // Remove from queue
-      if (config.winQueue) {
-        config.winQueue = config.winQueue.filter(
-          (n) => !(n.category === category && n.player === winner)
-        );
-      }
-
-      await gameContainer.item("config", "game").replace(config);
+        // Remove from queue
+        if (cfg.winQueue) {
+          cfg.winQueue = cfg.winQueue.filter(
+            (n) => !(n.category === category && n.player === winner)
+          );
+        }
+      });
 
       return { status: 200, jsonBody: { message: `${category} claimed by ${winner}`, claimedWins: config.claimedWins } };
     } catch (error) {
@@ -291,14 +289,11 @@ app.http("adminUnclaimWin", {
     try {
       const { category } = await request.json();
 
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
-
-      if (config.claimedWins && config.claimedWins[category]) {
-        delete config.claimedWins[category];
-      }
-
-      await gameContainer.item("config", "game").replace(config);
+      const { config } = await updateConfig((cfg) => {
+        if (cfg.claimedWins && cfg.claimedWins[category]) {
+          delete cfg.claimedWins[category];
+        }
+      });
 
       return { status: 200, jsonBody: { message: `${category} unclaimed`, claimedWins: config.claimedWins || {} } };
     } catch (error) {
@@ -398,16 +393,13 @@ app.http("adminDismissQueueItem", {
     try {
       const { category, player } = await request.json();
 
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
-
-      if (config.winQueue) {
-        config.winQueue = config.winQueue.filter(
-          (n) => !(n.category === category && n.player === player)
-        );
-      }
-
-      await gameContainer.item("config", "game").replace(config);
+      const { config } = await updateConfig((cfg) => {
+        if (cfg.winQueue) {
+          cfg.winQueue = cfg.winQueue.filter(
+            (n) => !(n.category === category && n.player === player)
+          );
+        }
+      });
 
       return { status: 200, jsonBody: { message: "Queue item dismissed", winQueue: config.winQueue } };
     } catch (error) {
@@ -498,6 +490,66 @@ app.http("adminExport", {
   },
 });
 
+// GET /api/game-admin/player-answers?alias=... — A single player's questions + answers
+// Used by admin to spot-check a raffle winner's connections in person.
+app.http("adminPlayerAnswers", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "game-admin/player-answers",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const alias = request.query.get("alias");
+      if (!alias) {
+        return { status: 400, jsonBody: { error: "alias is required" } };
+      }
+
+      const { gameContainer, playersContainer } = await ensureInitialized();
+
+      const { resource: config } = await gameContainer.item("config", "game").read();
+      const questionMap = {};
+      (config.questions || []).forEach(q => { questionMap[q.id] = q.text; });
+
+      const { resources: matches } = await playersContainer.items
+        .query({
+          query: "SELECT c.alias, c.displayName, c.teamName, c.card FROM c WHERE c.partitionKey = 'player' AND c.alias = @alias",
+          parameters: [{ name: "@alias", value: alias }],
+        })
+        .fetchAll();
+
+      if (matches.length === 0) {
+        return { status: 404, jsonBody: { error: "Player not found" } };
+      }
+
+      const p = matches[0];
+      const answers = (p.card || [])
+        .filter(cell => cell.answer && cell.questionId !== "free")
+        .map(cell => ({
+          question: questionMap[cell.questionId] || cell.questionText || cell.questionId,
+          answer: cell.answer,
+          completedAt: cell.completedAt,
+        }));
+
+      return {
+        status: 200,
+        jsonBody: {
+          alias: p.alias,
+          displayName: p.displayName,
+          teamName: p.teamName || '',
+          answers,
+        },
+      };
+    } catch (error) {
+      context.log("Error in adminPlayerAnswers:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
 // POST /api/game-admin/set-mode
 app.http("adminSetMode", {
   methods: ["POST"],
@@ -516,15 +568,16 @@ app.http("adminSetMode", {
         return { status: 400, jsonBody: { error: "mode must be 'classic' or 'raffle'" } };
       }
 
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
-
-      if (config.gameState !== "lobby") {
-        return { status: 400, jsonBody: { error: "Game mode can only be changed in lobby state" } };
+      const { result } = await updateConfig((cfg) => {
+        if (cfg.gameState !== "lobby") {
+          return { abort: true, error: "Game mode can only be changed in lobby state" };
+        }
+        cfg.gameMode = mode;
+        return {};
+      });
+      if (result.error) {
+        return { status: 400, jsonBody: { error: result.error } };
       }
-
-      config.gameMode = mode;
-      await gameContainer.item("config", "game").replace(config);
 
       return { status: 200, jsonBody: { message: `Game mode set to ${mode}`, gameMode: mode } };
     } catch (error) {
@@ -546,16 +599,17 @@ app.http("adminCloseGame", {
     }
 
     try {
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
-
-      if (config.gameState !== "active") {
-        return { status: 400, jsonBody: { error: "Game can only be closed from active state" } };
+      const { result } = await updateConfig((cfg) => {
+        if (cfg.gameState !== "active") {
+          return { abort: true, error: "Game can only be closed from active state" };
+        }
+        cfg.gameState = "closed";
+        cfg.closedAt = new Date().toISOString();
+        return {};
+      });
+      if (result.error) {
+        return { status: 400, jsonBody: { error: result.error } };
       }
-
-      config.gameState = "closed";
-      config.closedAt = new Date().toISOString();
-      await gameContainer.item("config", "game").replace(config);
 
       return { status: 200, jsonBody: { message: "Game closed! Ready for raffle draw.", gameState: "closed" } };
     } catch (error) {
@@ -577,61 +631,67 @@ app.http("adminDrawRaffle", {
     }
 
     try {
-      const { gameContainer, playersContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
+      const { playersContainer } = await ensureInitialized();
 
-      if (config.gameState !== "closed") {
-        return { status: 400, jsonBody: { error: "Game must be closed before drawing raffle winners" } };
-      }
-
-      if (!config.raffleResults) config.raffleResults = [];
-
-      // Get all players
+      // Get all players (read once; the draw itself happens inside the
+      // optimistic-concurrency update so it re-runs safely on conflict).
       const { resources: players } = await playersContainer.items
         .query("SELECT c.alias, c.displayName, c.teamName, c.completedCount, c.score, c.extraRaffleEntries FROM c WHERE c.partitionKey = 'player'")
         .fetchAll();
 
-      // Exclude previous winners
-      const previousWinners = new Set(config.raffleResults.map(r => r.winner));
-      const eligiblePlayers = players.filter(p => !previousWinners.has(p.alias));
-
-      if (eligiblePlayers.length === 0) {
-        return { status: 400, jsonBody: { error: "No eligible players remaining in the pool" } };
-      }
-
-      // Build weighted pool (bingo score + extra entries)
-      const pool = [];
-      for (const player of eligiblePlayers) {
-        const bingoEntries = player.score ?? player.completedCount ?? 1;
-        const extraEntries = player.extraRaffleEntries || 0;
-        const totalEntries = bingoEntries + extraEntries;
-        for (let i = 0; i < totalEntries; i++) {
-          pool.push(player);
+      const { result } = await updateConfig((cfg) => {
+        if (cfg.gameState !== "closed") {
+          return { abort: true, error: "Game must be closed before drawing raffle winners" };
         }
+
+        if (!cfg.raffleResults) cfg.raffleResults = [];
+
+        // Exclude previous winners
+        const previousWinners = new Set(cfg.raffleResults.map(r => r.winner));
+        const eligiblePlayers = players.filter(p => !previousWinners.has(p.alias));
+
+        if (eligiblePlayers.length === 0) {
+          return { abort: true, error: "No eligible players remaining in the pool" };
+        }
+
+        // Build weighted pool (bingo score + extra entries)
+        const pool = [];
+        for (const player of eligiblePlayers) {
+          const bingoEntries = player.score ?? player.completedCount ?? 1;
+          const extraEntries = player.extraRaffleEntries || 0;
+          const totalEntries = bingoEntries + extraEntries;
+          for (let i = 0; i < totalEntries; i++) {
+            pool.push(player);
+          }
+        }
+
+        // Draw random winner
+        const winnerIndex = Math.floor(Math.random() * pool.length);
+        const winner = pool[winnerIndex];
+
+        const drawResult = {
+          winner: winner.alias,
+          displayName: winner.displayName,
+          teamName: winner.teamName || '',
+          entries: (winner.score ?? winner.completedCount ?? 1) + (winner.extraRaffleEntries || 0),
+          totalPoolEntries: pool.length,
+          drawnAt: new Date().toISOString(),
+          drawNumber: cfg.raffleResults.length + 1,
+        };
+
+        cfg.raffleResults.push(drawResult);
+        return { drawResult, remainingPlayers: eligiblePlayers.length - 1 };
+      });
+
+      if (result.error) {
+        return { status: 400, jsonBody: { error: result.error } };
       }
-
-      // Draw random winner
-      const winnerIndex = Math.floor(Math.random() * pool.length);
-      const winner = pool[winnerIndex];
-
-      const result = {
-        winner: winner.alias,
-        displayName: winner.displayName,
-        teamName: winner.teamName || '',
-        entries: (winner.score ?? winner.completedCount ?? 1) + (winner.extraRaffleEntries || 0),
-        totalPoolEntries: pool.length,
-        drawnAt: new Date().toISOString(),
-        drawNumber: config.raffleResults.length + 1,
-      };
-
-      config.raffleResults.push(result);
-      await gameContainer.item("config", "game").replace(config);
 
       return {
         status: 200,
         jsonBody: {
-          ...result,
-          remainingPlayers: eligiblePlayers.length - 1,
+          ...result.drawResult,
+          remainingPlayers: result.remainingPlayers,
           totalPlayers: players.length,
         },
       };
@@ -654,11 +714,9 @@ app.http("adminResetRaffle", {
     }
 
     try {
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
-
-      config.raffleResults = [];
-      await gameContainer.item("config", "game").replace(config);
+      await updateConfig((cfg) => {
+        cfg.raffleResults = [];
+      });
 
       return { status: 200, jsonBody: { message: "Raffle results cleared", raffleResults: [] } };
     } catch (error) {
@@ -735,21 +793,19 @@ app.http("adminClaimSession", {
         return { status: 400, jsonBody: { error: "name and sessionId are required" } };
       }
 
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
+      const { config } = await updateConfig((cfg) => {
+        // Track all admin logins
+        if (!cfg.adminSessions) cfg.adminSessions = [];
+        // Remove existing entry for this sessionId
+        cfg.adminSessions = cfg.adminSessions.filter(s => s.sessionId !== sessionId);
+        cfg.adminSessions.push({ name, sessionId, lastSeen: new Date().toISOString() });
+        // Clean stale sessions (older than 2 minutes)
+        const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        cfg.adminSessions = cfg.adminSessions.filter(s => s.lastSeen > twoMinAgo);
 
-      // Track all admin logins
-      if (!config.adminSessions) config.adminSessions = [];
-      // Remove existing entry for this sessionId
-      config.adminSessions = config.adminSessions.filter(s => s.sessionId !== sessionId);
-      config.adminSessions.push({ name, sessionId, lastSeen: new Date().toISOString() });
-      // Clean stale sessions (older than 2 minutes)
-      const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-      config.adminSessions = config.adminSessions.filter(s => s.lastSeen > twoMinAgo);
-
-      // Set active admin
-      config.activeAdmin = { name, sessionId, claimedAt: new Date().toISOString() };
-      await gameContainer.item("config", "game").replace(config);
+        // Set active admin
+        cfg.activeAdmin = { name, sessionId, claimedAt: new Date().toISOString() };
+      });
 
       return {
         status: 200,
@@ -781,20 +837,22 @@ app.http("adminGetSession", {
 
     try {
       const sessionId = request.query.get("sessionId");
-      const { gameContainer } = await ensureInitialized();
-      const { resource: config } = await gameContainer.item("config", "game").read();
 
-      // Update lastSeen for this session
-      if (sessionId && config.adminSessions) {
-        const session = config.adminSessions.find(s => s.sessionId === sessionId);
-        if (session) {
-          session.lastSeen = new Date().toISOString();
-          // Clean stale sessions
-          const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-          config.adminSessions = config.adminSessions.filter(s => s.lastSeen > twoMinAgo);
-          await gameContainer.item("config", "game").replace(config);
+      const { config } = await updateConfig((cfg) => {
+        // Update lastSeen for this session
+        if (sessionId && cfg.adminSessions) {
+          const session = cfg.adminSessions.find(s => s.sessionId === sessionId);
+          if (session) {
+            session.lastSeen = new Date().toISOString();
+            // Clean stale sessions
+            const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+            cfg.adminSessions = cfg.adminSessions.filter(s => s.lastSeen > twoMinAgo);
+            return {};
+          }
         }
-      }
+        // Nothing to update — skip the write to avoid needless contention.
+        return { abort: true };
+      });
 
       return {
         status: 200,
