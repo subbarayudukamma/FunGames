@@ -9,6 +9,7 @@ export default function RulesContent({ showVersion = false }) {
       <ul style={{ paddingLeft: '1.25rem', lineHeight: '1.7', fontSize: '0.9rem', margin: '0 0 1rem' }}>
         <li>Each tile = a prompt describing a person to find (e.g. "someone who has a pet")</li>
         <li>Mingle and find <strong>people who match the criteria</strong>, then add them as your answer</li>
+        <li>You can only add people who've <strong>joined the game</strong> — if someone you meet hasn't joined yet, encourage them to! 🙌</li>
         <li>Anyone who matches counts — same team or different team. A different-team match earns you <strong>more raffle entries</strong>! 🙂</li>
       </ul>
 

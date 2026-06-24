@@ -98,6 +98,15 @@ export default function PlayerEntry() {
       return;
     }
 
+    const ok = window.confirm(
+      `Join as:\n\n` +
+      `  Alias: ${alias.trim().toLowerCase()}\n` +
+      `  Name: ${displayName.trim()}\n` +
+      `  Team: ${teamName.trim()}\n\n` +
+      `You won't be able to change these after joining. Continue?`
+    );
+    if (!ok) return;
+
     setLoading(true);
     setError('');
 
@@ -272,6 +281,15 @@ export default function PlayerEntry() {
               {error}
             </p>
           )}
+
+          <div style={{
+            marginBottom: '0.75rem', padding: '0.6rem 0.75rem',
+            background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px',
+          }}>
+            <p style={{ fontSize: '0.8rem', color: '#92400e', margin: 0 }}>
+              ⚠️ Please double-check your details — <strong>you can't change them after joining</strong>. Your name is how teammates will find you in the game.
+            </p>
+          </div>
 
           <button
             className="btn btn-primary"

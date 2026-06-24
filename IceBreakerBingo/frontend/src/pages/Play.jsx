@@ -381,7 +381,7 @@ export default function Play() {
                     onFocus={() => searchText.trim() && suggestions.length > 0 && setShowSuggestions(true)}
                   />
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.25rem 0 0' }}>
-                    Don't see someone? They may not have joined yet. List refreshes automatically.
+                    You can only pick people who've <strong>joined the game</strong>. If someone you talked to isn't listed, encourage them to join — the list refreshes automatically.
                   </p>
                   {showSuggestions && (
                     <ul className="autocomplete-list">
