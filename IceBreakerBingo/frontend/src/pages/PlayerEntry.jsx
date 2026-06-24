@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { joinGame, getGameState } from '../api';
+import { joinGame, getGameState, getRoster } from '../api';
 import RulesContent from '../RulesContent';
 
 export default function PlayerEntry() {
@@ -13,6 +13,7 @@ export default function PlayerEntry() {
   const [playerCount, setPlayerCount] = useState(0);
   const [joined, setJoined] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [teamNames, setTeamNames] = useState([]);
   const navigate = useNavigate();
 
   // Check if player already joined (from localStorage)
@@ -63,6 +64,32 @@ export default function PlayerEntry() {
     const interval = setInterval(fetchState, 5000);
     return () => clearInterval(interval);
   }, [joined, navigate]);
+
+  // While on the entry screen, keep a fresh list of distinct team names that
+  // others have already entered, so players can pick one (avoids typos /
+  // near-duplicate team names) or type their own.
+  useEffect(() => {
+    if (joined) return;
+    let active = true;
+    const fetchTeams = async () => {
+      try {
+        const data = await getRoster();
+        if (!active) return;
+        const names = Array.from(
+          new Set((data.roster || []).map((r) => (r.teamName || '').trim()).filter(Boolean))
+        ).sort((a, b) => a.localeCompare(b));
+        setTeamNames(names);
+      } catch (e) {
+        // ignore — list stays as-is
+      }
+    };
+    fetchTeams();
+    const interval = setInterval(fetchTeams, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [joined]);
 
   const handleJoin = async (e) => {
     e.preventDefault();
@@ -176,10 +203,51 @@ export default function PlayerEntry() {
           <input
             className="input"
             type="text"
-            placeholder="e.g., Azure Compute"
+            placeholder="Pick an existing team below or type your own"
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
+            autoComplete="off"
           />
+          {teamNames.length > 0 && (() => {
+            const trimmed = teamName.trim().toLowerCase();
+            const matches = teamNames.filter((t) => t.toLowerCase().includes(trimmed));
+            const exact = teamNames.some((t) => t.toLowerCase() === trimmed);
+            return (
+              <div style={{ margin: '-0.25rem 0 0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                  {matches.length > 0 ? 'Tap a team to pick it:' : 'Existing teams:'}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {(matches.length > 0 ? matches : teamNames).map((t) => {
+                    const selected = t.toLowerCase() === trimmed;
+                    return (
+                      <button
+                        type="button"
+                        key={t}
+                        onClick={() => setTeamName(t)}
+                        style={{
+                          fontSize: '0.8rem',
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '999px',
+                          cursor: 'pointer',
+                          border: selected ? '1px solid var(--primary)' : '1px solid var(--border)',
+                          background: selected ? 'var(--primary)' : 'transparent',
+                          color: selected ? '#fff' : 'var(--text)',
+                        }}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+                {trimmed && !exact && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontStyle: 'italic' }}>
+                    Starting a new team: “{teamName.trim()}”
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {error && (
             <p style={{ color: 'var(--danger)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>

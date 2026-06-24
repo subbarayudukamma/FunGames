@@ -236,7 +236,7 @@ For local development: if `PLAYROOM_KEY` is not set in `local.settings.json`, al
 - ✅ **Raffle logging** — all draws timestamped and included in JSON export
 - ✅ **Winner verification** — each logged raffle winner is a clickable link that opens their questions & answers, so the admin can spot-check a connection in person
 - ✅ Admin dashboard with leaderboard
-- ✅ **Team name** — players enter their team on join, shown in braces next to each member in the admin lobby and leaderboard
+- ✅ **Team name** — on join, players pick from the list of teams others have already entered (kept fresh in the background) or type their own; shown in braces next to each member in the admin lobby and leaderboard
 - ✅ **Roster-only answers** — players can only select from registered participants (no free-text); any team member can be selected; multiple people can be selected per question as tags/chips
 - ✅ **In-game rules** — a `?` button on the bingo card opens the full rules/prizes (with version info); session never expires so players can leave and return anytime
 - ✅ **Alias disambiguation** — suggestions show `@alias` next to display name to distinguish people with the same name; search matches on name or alias

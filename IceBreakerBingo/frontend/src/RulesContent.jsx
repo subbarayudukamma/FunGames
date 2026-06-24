@@ -27,10 +27,18 @@ export default function RulesContent({ showVersion = false }) {
       </p>
 
       <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🧩 Earn Extra Raffle Entries</h3>
-      <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-        Complete the puzzle with the piece you got, then sit together as a team. When the admin checks
-        your table and sees a completed puzzle, everyone at the table gets
-        <strong> 10 extra raffle entries</strong>. 🧩
+      <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+        You each picked up <strong>one puzzle piece</strong>. Track down the people who have the
+        <strong> other pieces that complete your puzzle</strong>, then grab a table and
+        <strong> sit together</strong>. Get to know each other and play your bingo as a group.
+      </p>
+      <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+        When the admin comes by, checks your table, and sees a <strong>completed puzzle</strong>,
+        everyone at the table gets <strong>10 extra raffle entries</strong>. 🧩
+      </p>
+      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', fontStyle: 'italic' }}>
+        💡 Some pieces may never have been picked up — the admin holds the leftovers, so check with
+        them if your puzzle is missing one.
       </p>
 
       <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>🎁 Raffle & Prizes</h3>
