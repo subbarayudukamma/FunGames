@@ -93,8 +93,8 @@ export default function PlayerEntry() {
 
   const handleJoin = async (e) => {
     e.preventDefault();
-    if (!alias.trim() || !displayName.trim()) {
-      setError('Please enter both alias and display name');
+    if (!alias.trim() || !displayName.trim() || !teamName.trim()) {
+      setError('Please enter your alias, display name, and team name');
       return;
     }
 
@@ -161,6 +161,21 @@ export default function PlayerEntry() {
           <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
             You'll be taken to your bingo card automatically when the game starts.
           </p>
+
+          <button
+            type="button"
+            className="btn"
+            style={{ marginTop: '1rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)' }}
+            onClick={() => setShowRules(!showRules)}
+          >
+            {showRules ? '▲ Hide Rules' : '📋 How to Play & Prizes'}
+          </button>
+
+          {showRules && (
+            <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#f0f9ff', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+              <RulesContent />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -176,7 +191,7 @@ export default function PlayerEntry() {
       <div className="card">
         <form onSubmit={handleJoin}>
           <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 500 }}>
-            Microsoft Alias
+            Microsoft Alias <span style={{ color: 'var(--danger)' }}>*</span>
           </label>
           <input
             className="input"
@@ -187,7 +202,7 @@ export default function PlayerEntry() {
           />
 
           <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 500 }}>
-            Display Name
+            Display Name <span style={{ color: 'var(--danger)' }}>*</span>
           </label>
           <input
             className="input"
@@ -197,9 +212,12 @@ export default function PlayerEntry() {
             onChange={(e) => setDisplayName(e.target.value)}
           />
 
-          <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 500 }}>
-            Team Name
+          <label style={{ display: 'block', marginBottom: '0.1rem', fontWeight: 500 }}>
+            Team Name <span style={{ color: 'var(--danger)' }}>*</span>
           </label>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+            (your leaf team — the small group you attend daily standup with, not a broad org)
+          </div>
           <input
             className="input"
             type="text"
@@ -255,7 +273,11 @@ export default function PlayerEntry() {
             </p>
           )}
 
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={loading || !alias.trim() || !displayName.trim() || !teamName.trim()}
+          >
             {loading ? 'Joining...' : '🎮 Join Game'}
           </button>
 

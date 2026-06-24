@@ -12,8 +12,8 @@ app.http("join", {
     try {
       const { alias, displayName, teamName } = await request.json();
 
-      if (!alias || !displayName) {
-        return { status: 400, jsonBody: { error: "alias and displayName are required" } };
+      if (!alias || !displayName || !teamName || !String(teamName).trim()) {
+        return { status: 400, jsonBody: { error: "alias, displayName, and teamName are required" } };
       }
 
       const { gameContainer, playersContainer } = await ensureInitialized();
