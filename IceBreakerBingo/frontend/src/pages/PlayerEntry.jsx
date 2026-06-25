@@ -249,22 +249,26 @@ export default function PlayerEntry() {
           <input
             className="input"
             type="text"
-            placeholder="Pick an existing team below or type your own"
+            placeholder="Type your team name"
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             autoComplete="off"
           />
-          {teamNames.length > 0 && (() => {
+          {(() => {
             const trimmed = teamName.trim().toLowerCase();
+            // Only surface suggestions once the player starts typing — don't
+            // show the team list upfront.
+            if (!trimmed) return null;
             const matches = teamNames.filter((t) => t.toLowerCase().includes(trimmed));
             const exact = teamNames.some((t) => t.toLowerCase() === trimmed);
+            if (matches.length === 0) return null;
             return (
               <div style={{ margin: '-0.25rem 0 0.75rem' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                  {matches.length > 0 ? 'Tap a team to pick it:' : 'Existing teams:'}
+                  Tap a team to pick it:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  {(matches.length > 0 ? matches : teamNames).map((t) => {
+                  {matches.map((t) => {
                     const selected = t.toLowerCase() === trimmed;
                     return (
                       <button
