@@ -605,6 +605,10 @@ app.http("adminCloseGame", {
         }
         cfg.gameState = "closed";
         cfg.closedAt = new Date().toISOString();
+        // Start the raffle for this round fresh — clear any winners drawn in a
+        // previous round so stale winners (whose player records may no longer
+        // exist) don't carry over into the new draw.
+        cfg.raffleResults = [];
         return {};
       });
       if (result.error) {

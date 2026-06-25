@@ -158,6 +158,8 @@ export default function Admin() {
     try {
       const result = await adminReset(adminKey);
       setMessage(result.message || result.error);
+      setLastDrawn(null);
+      setRaffleResults([]);
     } finally {
       setLoading(false);
     }
@@ -181,6 +183,11 @@ export default function Admin() {
     try {
       const result = await adminCloseGame(adminKey);
       setMessage(result.message || result.error);
+      if (!result.error) {
+        // Fresh raffle round — drop any winner state from a previous round.
+        setLastDrawn(null);
+        setRaffleResults([]);
+      }
     } finally {
       setLoading(false);
     }
