@@ -18,6 +18,7 @@ export default function PlayerEntry() {
   const [joined, setJoined] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [teamNames, setTeamNames] = useState(KNOWN_TEAMS);
+  const [teamFocused, setTeamFocused] = useState(false);
   const navigate = useNavigate();
 
   // Check if player already joined (from localStorage)
@@ -252,52 +253,40 @@ export default function PlayerEntry() {
             placeholder="Type your team name"
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
+            onFocus={() => setTeamFocused(true)}
+            onBlur={() => setTimeout(() => setTeamFocused(false), 150)}
             autoComplete="off"
           />
-          {(() => {
-            const trimmed = teamName.trim().toLowerCase();
-            // Only surface suggestions once the player starts typing — don't
-            // show the team list upfront.
-            if (!trimmed) return null;
-            const matches = teamNames.filter((t) => t.toLowerCase().includes(trimmed));
-            const exact = teamNames.some((t) => t.toLowerCase() === trimmed);
-            if (matches.length === 0) return null;
-            return (
-              <div style={{ margin: '-0.25rem 0 0.75rem' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                  Tap a team to pick it:
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  {matches.map((t) => {
-                    const selected = t.toLowerCase() === trimmed;
-                    return (
-                      <button
-                        type="button"
-                        key={t}
-                        onClick={() => setTeamName(t)}
-                        style={{
-                          fontSize: '0.8rem',
-                          padding: '0.25rem 0.6rem',
-                          borderRadius: '999px',
-                          cursor: 'pointer',
-                          border: selected ? '1px solid var(--primary)' : '1px solid var(--border)',
-                          background: selected ? 'var(--primary)' : 'transparent',
-                          color: selected ? '#fff' : 'var(--text)',
-                        }}
-                      >
-                        {t}
-                      </button>
-                    );
-                  })}
-                </div>
-                {trimmed && !exact && (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontStyle: 'italic' }}>
-                    Starting a new team: “{teamName.trim()}”
-                  </div>
-                )}
+          {teamFocused && teamNames.length > 0 && (
+            <div style={{ margin: '-0.25rem 0 0.75rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                Tap a team to pick it, or keep typing your own:
               </div>
-            );
-          })()}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {teamNames.map((t) => {
+                  const selected = t.toLowerCase() === teamName.trim().toLowerCase();
+                  return (
+                    <button
+                      type="button"
+                      key={t}
+                      onClick={() => setTeamName(t)}
+                      style={{
+                        fontSize: '0.8rem',
+                        padding: '0.25rem 0.6rem',
+                        borderRadius: '999px',
+                        cursor: 'pointer',
+                        border: selected ? '1px solid var(--primary)' : '1px solid var(--border)',
+                        background: selected ? 'var(--primary)' : 'transparent',
+                        color: selected ? '#fff' : 'var(--text)',
+                      }}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {error && (
             <p style={{ color: 'var(--danger)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
