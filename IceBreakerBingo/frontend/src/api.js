@@ -30,7 +30,17 @@ export async function joinGame(alias, displayName, teamName) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ alias, displayName, teamName }),
   });
-  return res.json();
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    // Non-JSON response (e.g. cold-start gateway/503) — synthesize an error.
+    data = {};
+  }
+  if (!res.ok && !data.error) {
+    data.error = `Server is waking up (status ${res.status}). Please try again.`;
+  }
+  return data;
 }
 
 export async function getGameState() {

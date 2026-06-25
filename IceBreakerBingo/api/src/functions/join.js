@@ -86,7 +86,30 @@ app.http("join", {
         completedDiagonals: [],
       };
 
-      await playersContainer.items.create(player);
+      try {
+        await playersContainer.items.create(player);
+      } catch (createErr) {
+        // A concurrent/duplicate join for the same alias created the player
+        // first — treat as a successful join rather than a 500 error.
+        if (createErr.code === 409) {
+          const { resource: justCreated } = await playersContainer.item(playerId, "player").read();
+          const p = justCreated || player;
+          return {
+            status: 200,
+            jsonBody: {
+              message: "Already joined",
+              gameState: config.gameState,
+              player: {
+                alias: p.alias,
+                displayName: p.displayName,
+                teamName: p.teamName,
+                card: config.gameState === "active" ? p.card : null,
+              },
+            },
+          };
+        }
+        throw createErr;
+      }
 
       return {
         status: 200,

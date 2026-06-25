@@ -110,22 +110,34 @@ export default function PlayerEntry() {
     setLoading(true);
     setError('');
 
-    try {
+    // Join with one automatic retry — the first request to a cold function
+    // instance can fail transiently while it warms up. Retrying is safe because
+    // the backend treats a duplicate/idempotent join gracefully.
+    const attemptJoin = async () => {
       const result = await joinGame(alias.trim(), displayName.trim(), teamName.trim());
-      if (result.error) {
-        setError(result.error);
-      } else {
-        localStorage.setItem('bingo_alias', alias.trim().toLowerCase());
-        localStorage.setItem('bingo_name', displayName.trim());
-        localStorage.setItem('bingo_team', teamName.trim());
-        setJoined(true);
+      if (result.error) throw new Error(result.error);
+      return result;
+    };
 
-        if (result.gameState === 'active') {
-          navigate('/play');
-        }
+    try {
+      let result;
+      try {
+        result = await attemptJoin();
+      } catch (firstErr) {
+        await new Promise((r) => setTimeout(r, 800));
+        result = await attemptJoin(); // surfaces error if this also fails
+      }
+
+      localStorage.setItem('bingo_alias', alias.trim().toLowerCase());
+      localStorage.setItem('bingo_name', displayName.trim());
+      localStorage.setItem('bingo_team', teamName.trim());
+      setJoined(true);
+
+      if (result.gameState === 'active') {
+        navigate('/play');
       }
     } catch (e) {
-      setError('Failed to join. Please try again.');
+      setError(e.message || 'Failed to join. Please try again.');
     } finally {
       setLoading(false);
     }
