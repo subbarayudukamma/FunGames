@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { joinGame, getGameState, getRoster } from '../api';
 import RulesContent from '../RulesContent';
 
+// Seed the team picker with known leaf teams so the first players have options
+// to choose from. Anyone not on these teams can still type their own.
+const KNOWN_TEAMS = ['Maps', 'Ontology', 'Graph'];
+
 export default function PlayerEntry() {
   const [alias, setAlias] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -13,7 +17,7 @@ export default function PlayerEntry() {
   const [playerCount, setPlayerCount] = useState(0);
   const [joined, setJoined] = useState(false);
   const [showRules, setShowRules] = useState(false);
-  const [teamNames, setTeamNames] = useState([]);
+  const [teamNames, setTeamNames] = useState(KNOWN_TEAMS);
   const navigate = useNavigate();
 
   // Check if player already joined (from localStorage)
@@ -76,7 +80,10 @@ export default function PlayerEntry() {
         const data = await getRoster();
         if (!active) return;
         const names = Array.from(
-          new Set((data.roster || []).map((r) => (r.teamName || '').trim()).filter(Boolean))
+          new Set([
+            ...KNOWN_TEAMS,
+            ...(data.roster || []).map((r) => (r.teamName || '').trim()).filter(Boolean),
+          ])
         ).sort((a, b) => a.localeCompare(b));
         setTeamNames(names);
       } catch (e) {

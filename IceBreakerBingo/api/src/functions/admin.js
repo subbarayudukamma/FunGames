@@ -480,6 +480,7 @@ app.http("adminExport", {
           entries: r.entries,
           totalPoolEntries: r.totalPoolEntries,
           drawnAt: r.drawnAt,
+          prize: r.prize || '',
         }));
 
       return { status: 200, jsonBody: { players: exportData, connections, gameMode: config.gameMode || 'raffle', raffleResults: config.raffleResults || [], raffleWinners, exportedAt: new Date().toISOString() } };
@@ -701,6 +702,59 @@ app.http("adminDrawRaffle", {
       };
     } catch (error) {
       context.log("Error in adminDrawRaffle:", error);
+      return { status: 500, jsonBody: { error: "Internal server error" } };
+    }
+  },
+});
+
+// POST /api/game-admin/winner-prize
+// Admin records what prize a raffle winner received (for export/record keeping).
+const ALLOWED_PRIZES = [
+  "Gift Card",
+  "Lunch With Tessa",
+  "Lunch With Raja",
+  "Lunch With Alexie",
+  "Lunch With Katie",
+];
+
+app.http("adminSetWinnerPrize", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  route: "game-admin/winner-prize",
+  handler: async (request, context) => {
+    if (!validatePlayroom(request)) return playroomDenied();
+    if (!validateAdmin(request)) {
+      return { status: 401, jsonBody: { error: "Invalid admin key" } };
+    }
+
+    try {
+      const { drawNumber, prize } = await request.json();
+
+      if (typeof drawNumber !== "number") {
+        return { status: 400, jsonBody: { error: "drawNumber (number) is required" } };
+      }
+      // Allow clearing the prize with an empty string; otherwise it must be one
+      // of the known options.
+      if (prize !== "" && !ALLOWED_PRIZES.includes(prize)) {
+        return { status: 400, jsonBody: { error: `prize must be empty or one of: ${ALLOWED_PRIZES.join(", ")}` } };
+      }
+
+      const { result } = await updateConfig((cfg) => {
+        const entry = (cfg.raffleResults || []).find((r) => r.drawNumber === drawNumber);
+        if (!entry) {
+          return { abort: true, error: "Winner not found for that draw number" };
+        }
+        entry.prize = prize;
+        return { entry };
+      });
+
+      if (result.error) {
+        return { status: 404, jsonBody: { error: result.error } };
+      }
+
+      return { status: 200, jsonBody: { message: "Prize recorded", drawNumber, prize, prizeOptions: ALLOWED_PRIZES } };
+    } catch (error) {
+      context.log("Error in adminSetWinnerPrize:", error);
       return { status: 500, jsonBody: { error: "Internal server error" } };
     }
   },

@@ -16,12 +16,23 @@ import {
   adminCloseGame,
   adminDrawRaffle,
   adminResetRaffle,
+  adminSetWinnerPrize,
   adminAddRaffleEntries,
   adminClaimSession,
   adminGetSession,
   adminGetPlayerAnswers,
   getGameState,
 } from '../api';
+
+// Prize options an admin can record for each raffle winner (for record keeping
+// in the exported JSON). Keep in sync with ALLOWED_PRIZES in api/admin.js.
+const PRIZE_OPTIONS = [
+  'Gift Card',
+  'Lunch With Tessa',
+  'Lunch With Raja',
+  'Lunch With Alexie',
+  'Lunch With Katie',
+];
 
 export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -222,6 +233,23 @@ export default function Admin() {
       setLoading(false);
     }
     fetchData();
+  };
+
+  const handleSetWinnerPrize = async (drawNumber, prize) => {
+    // Optimistically update the local winners log so the dropdown reflects the
+    // selection immediately.
+    setRaffleResults((prev) =>
+      prev.map((r) => (r.drawNumber === drawNumber ? { ...r, prize } : r))
+    );
+    setLastDrawn((prev) =>
+      prev && prev.drawNumber === drawNumber ? { ...prev, prize } : prev
+    );
+    try {
+      const result = await adminSetWinnerPrize(adminKey, drawNumber, prize);
+      if (result.error) setMessage(result.error);
+    } catch (e) {
+      setMessage('Failed to record prize');
+    }
   };
 
   const handleAddExtraEntries = async () => {
@@ -666,6 +694,21 @@ export default function Admin() {
               >
                 🔍 View answers to verify
               </button>
+              <div style={{ marginTop: '0.75rem' }}>
+                <label style={{ fontSize: '0.8rem', color: '#92400e', fontWeight: 600, marginRight: '0.5rem' }}>
+                  Prize received:
+                </label>
+                <select
+                  value={lastDrawn.prize || ''}
+                  onChange={(e) => handleSetWinnerPrize(lastDrawn.drawNumber, e.target.value)}
+                  style={{ padding: '0.3rem 0.5rem', borderRadius: '6px', border: '1px solid #f59e0b', fontSize: '0.85rem' }}
+                >
+                  <option value="">— Not recorded —</option>
+                  {PRIZE_OPTIONS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -682,6 +725,7 @@ export default function Admin() {
                     <th>Team</th>
                     <th>Entries</th>
                     <th>Time</th>
+                    <th>Prize</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -705,6 +749,19 @@ export default function Admin() {
                       <td>{r.teamName || '—'}</td>
                       <td>{r.entries}</td>
                       <td><small>{new Date(r.drawnAt).toLocaleTimeString()}</small></td>
+                      <td>
+                        <select
+                          value={r.prize || ''}
+                          onChange={(e) => handleSetWinnerPrize(r.drawNumber, e.target.value)}
+                          style={{ padding: '0.2rem 0.3rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.8rem' }}
+                          title="Record the prize this winner received"
+                        >
+                          <option value="">—</option>
+                          {PRIZE_OPTIONS.map((p) => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
+                        </select>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

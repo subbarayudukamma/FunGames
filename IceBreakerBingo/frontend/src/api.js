@@ -177,6 +177,15 @@ export async function adminResetRaffle(key) {
   return res.json();
 }
 
+export async function adminSetWinnerPrize(key, drawNumber, prize) {
+  const res = await fetch(withPlayroom(`${API_BASE}/game-admin/winner-prize?key=${encodeURIComponent(key)}`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ drawNumber, prize }),
+  });
+  return res.json();
+}
+
 export async function adminAddRaffleEntries(key, entries, players) {
   const res = await fetch(withPlayroom(`${API_BASE}/game-admin/add-raffle-entries?key=${encodeURIComponent(key)}`), {
     method: 'POST',
